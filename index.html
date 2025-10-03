@@ -3,128 +3,1177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>What if EA purchased your favorite game?</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>Browser Simulator</title>
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide icons from CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom styles for the simulator appearance */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .browser-toolbar {
+            user-select: none;
+        }
+        .active-tab {
+            z-index: 10;
+            border-bottom: 2px solid white !important; /* Visual trick to hide the border below the active tab */
+        }
+        .content-area {
+            flex-grow: 1;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        /* Style for mock pages to occupy full height */
+        .mock-page-content {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Custom CSS for icon rotation on refresh */
+        .rotate-on-click:active {
+            animation: spin 0.5s linear;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header class="header">
-            <img src="/EA.svg" alt="EA Logo" class="ea-logo">
-            <h1 class="title">Corporate Acquisition Simulator</h1>
-            <p class="subtitle">Discover the future of gaming</p>
-        </header>
+<body class="flex flex-col h-screen">
 
-        <main class="main-content">
-            <div class="input-section">
-                <label for="gameInput" class="input-label">Enter any game title:</label>
-                <div class="input-wrapper">
-                    <input 
-                        type="text" 
-                        id="gameInput" 
-                        class="game-input" 
-                        placeholder="e.g., Minecraft, Tetris, Dark Souls..."
-                        autocomplete="off"
-                    >
-                    <button id="transformBtn" class="transform-btn">
-                        <span class="btn-text">ACQUIRE</span>
-                        <span class="btn-icon">⚡</span>
-                    </button>
-                </div>
+    <!-- Custom Dialog Modal -->
+    <div id="custom-dialog" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm m-4">
+            <h3 id="dialog-title" class="text-xl font-bold mb-3 text-gray-800"></h3>
+            <p id="dialog-message" class="text-gray-600 mb-4"></p>
+            <input id="dialog-input" type="text" placeholder="" class="w-full p-2 border border-gray-300 rounded-lg hidden mb-4 focus:ring-indigo-500 focus:border-indigo-500">
+            <div class="flex justify-end space-x-3">
+                <button id="dialog-cancel-btn" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition hidden">Cancel</button>
+                <button id="dialog-confirm-btn" class="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"></button>
             </div>
-
-            <div id="loadingScreen" class="loading-screen hidden">
-                <div class="loading-content">
-                    <div class="loading-spinner"></div>
-                    <p class="loading-text">Processing acquisition...</p>
-                    <div class="loading-progress">
-                        <div class="progress-bar"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="resultScreen" class="result-screen hidden">
-                <div class="corporate-announcement">
-                    <div class="announcement-header">
-                        <h2 class="announcement-title">🎮 CORPORATE ACQUISITION COMPLETE 🎮</h2>
-                        <div class="confetti"></div>
-                    </div>
-                    
-                    <div class="game-transformation">
-                        <div class="before-after">
-                            <div class="game-card original">
-                                <h3 id="originalGame">Original Game</h3>
-                                <p class="game-description">Pure gaming experience</p>
-                            </div>
-                            <div class="transformation-arrow">➤</div>
-                            <div class="game-card ea-version">
-                                <h3 id="eaGame">EA Version</h3>
-                                <p class="game-description">Optimized for shareholder value</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="ai-description-section">
-                        <div class="ai-description-card">
-                            <h4>🤖 AI-Generated Corporate Vision</h4>
-                            <p id="aiDescription">Loading corporate transformation...</p>
-                        </div>
-                    </div>
-
-                    <div class="features-grid">
-                        <div class="feature-card" data-aos="fade-up">
-                            <div class="feature-icon">💰</div>
-                            <h4>Ultimate Team Mode</h4>
-                            <p id="ultimateTeamDesc">Collect player cards with loot boxes!</p>
-                        </div>
-                        <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
-                            <div class="feature-icon">🏆</div>
-                            <h4>Season Pass</h4>
-                            <p id="seasonPassDesc">Unlock content you already paid for!</p>
-                        </div>
-                        <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
-                            <div class="feature-icon">⚡</div>
-                            <h4>Energy System</h4>
-                            <p id="energyDesc">Wait 24 hours or pay $4.99 to continue!</p>
-                        </div>
-                        <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
-                            <div class="feature-icon">🎯</div>
-                            <h4>Pay-to-Win</h4>
-                            <p id="payToWinDesc">Victory has never been more affordable!</p>
-                        </div>
-                    </div>
-
-                    <div class="pricing-section">
-                        <h3>Choose Your Experience:</h3>
-                        <div class="pricing-options">
-                            <div class="price-tier">
-                                <h4>Base Game</h4>
-                                <p class="price">$59.99</p>
-                                <p class="price-desc">Barely functional</p>
-                            </div>
-                            <div class="price-tier recommended">
-                                <h4>Deluxe Edition</h4>
-                                <p class="price">$89.99</p>
-                                <p class="price-desc">Includes day-one DLC</p>
-                            </div>
-                            <div class="price-tier">
-                                <h4>Ultimate Edition</h4>
-                                <p class="price">$119.99</p>
-                                <p class="price-desc">The full game experience</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button id="resetBtn" class="reset-btn">ACQUIRE ANOTHER GAME</button>
-                </div>
-            </div>
-        </main>
-
-        <footer class="footer">
-            <p>*This is a parody. No actual games were harmed in the making of this experience.</p>
-        </footer>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Browser Toolbar (Header) -->
+    <header class="shadow-md bg-white browser-toolbar z-10">
+        <!-- Tab Bar Container -->
+        <div id="tab-bar" class="flex items-end bg-gray-200 border-b border-gray-300 overflow-x-auto whitespace-nowrap">
+            <!-- Tabs will be dynamically inserted here -->
+        </div>
+
+        <!-- Address Bar & Navigation -->
+        <div class="flex items-center p-2 bg-white border-b border-gray-200">
+            <div class="flex space-x-2 mr-3 text-gray-500">
+                <button id="back-btn" class="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50" title="Go Back">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <button id="forward-btn" class="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50" title="Go Forward">
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+                <button id="reload-btn" class="p-1 rounded-full hover:bg-gray-100 rotate-on-click" title="Reload Page">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Omnibox (Address Bar) -->
+            <div class="flex-grow flex items-center bg-gray-100 rounded-full py-1 px-4 shadow-inner border border-gray-200">
+                <input
+                    id="omnibox"
+                    type="text"
+                    placeholder="Type a URL or search query and hit ENTER!"
+                    class="w-full bg-transparent focus:outline-none text-gray-800 text-sm"
+                />
+            </div>
+
+            <button id="bookmark-add-btn" class="ml-3 p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-yellow-500" title="Bookmark This Page">
+                <i data-lucide="bookmark" class="w-5 h-5 fill-current"></i>
+            </button>
+        </div>
+
+        <!-- Bookmarks Bar Container -->
+        <div id="bookmarks-bar" class="flex items-center space-x-4 p-1.5 bg-white border-b border-gray-200 overflow-x-auto whitespace-nowrap">
+            <!-- Bookmarks will be dynamically inserted here -->
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="content-area" class="content-area"></main>
+
+    <script>
+        // --- Global Mock & Constants ---
+        
+        const MOCK_NEW_TAB = 'about:blank';
+        const MOCK_SEARCH_ENGINE_PREFIX = 'https://search.com/q='; 
+        const ECHO_LIST = 'echo://list'; 
+        const MOCK_GAMES_LIST = 'mock://games';
+
+        // Comprehensive map of all mock sites for direct navigation
+        const MOCK_SITES = {
+            // --- Standard Mocks ---
+            [MOCK_NEW_TAB]: { title: 'New Tab', type: 'standard', icon: 'home' },
+            [ECHO_LIST]: { title: 'Special Commands List', type: 'standard', icon: 'list' },
+            [MOCK_GAMES_LIST]: { title: 'Arcade Classics', type: 'standard', icon: 'gamepad' }, // Game List Page
+            'news.fakenews.com': { title: 'The Daily Silly', type: 'standard', icon: 'newspaper' },
+            'youareaidiot.com': { title: '!!! WINNER !!!', type: 'standard', icon: 'alert-triangle' }, // Crash site
+
+            // --- Iframe/External Sites (Updated) ---
+            'netframe.com': { 
+                title: 'NetFrame - Browser Demo', 
+                type: 'standard', 
+                icon: 'layout-template', 
+                description: 'A simulated browser-within-a-browser (loads external iframe: https://corrupt-astro.github.io/NetFrame/).',
+                externalUrl: 'https://corrupt-astro.github.io/NetFrame/' 
+            },
+            'TFFB.com': { 
+                title: 'TFFB - Browser Demo', 
+                type: 'standard', 
+                icon: 'layout-template', 
+                description: 'Loads TFFB.com (external iframe: https://corrupt-astro.github.io/TFFB/).',
+                externalUrl: 'https://corrupt-astro.github.io/TFFB/' 
+            },
+            'google.com': { 
+                title: 'Google Search', 
+                type: 'standard', 
+                icon: 'search', 
+                description: 'Loads the actual Google search page in an iframe.',
+                externalUrl: 'https://www.google.com/' 
+            },
+            
+            // --- Phishing Scenarios ---
+            'free v-bux': { title: 'Search: free v-bux', type: 'phishing', icon: 'zap', isSearchTrigger: true }, // Search Trigger
+            'vbucks-claim-99999': { title: 'V-Bux Claim: FINAL STEP!', type: 'phishing', icon: 'zap', displayUrl: 'totallynotphishing.net' },
+            'humanverify-net': { title: 'Human Verification', type: 'phishing', icon: 'user-check', displayUrl: 'humanverify.net' },
+            'urgent-pet-photos': { title: 'URGENT Security Check', type: 'phishing', icon: 'users', isSearchTrigger: true }, // Search Trigger
+            'pet-photo-access-verify': { title: 'Friendship Security Check', type: 'phishing', icon: 'users', displayUrl: 'missingdog.co/verify' },
+            'free-pizza-for-life': { title: 'Prince Mozzarella XIII', type: 'phishing', icon: 'pizza', isSearchTrigger: true }, // Search Trigger
+            'princeofpizza.org': { title: 'LIFETIME PIZZA SUPPLY', type: 'phishing', icon: 'pizza' },
+
+            // --- Phishing Scenarios (New 10) ---
+            'urgent-bank-security.com': { title: 'Bank Security Alert', type: 'phishing', icon: 'shield-alert', description: 'Simulates a bank alert asking you to verify your account information immediately.' },
+            'netflix-password-update.cc': { title: 'Netflix Account Update', type: 'phishing', icon: 'clapperboard', description: 'A fake subscription renewal page asking for credit card details to prevent service interruption.' },
+            'amazon-prize-winner.info': { title: 'Congratulations! Winner!', type: 'phishing', icon: 'award', description: 'A "you won a prize" survey scam that requests personal information to claim a non-existent reward.' },
+            'free-bitcoin-miner.biz': { title: 'Crypto Investment Portal', type: 'phishing', icon: 'bitcoin', description: 'An investment opportunity promising impossible returns, typically leading to a funds theft.' },
+            'gov-tax-refund-form.org': { title: 'IRS Tax Refund Center', type: 'phishing', icon: 'file-text', description: 'Impersonates a government agency to collect sensitive data like Social Security Numbers.' },
+            'help-my-printer-is-broken.com': { title: 'Official Tech Support', type: 'phishing', icon: 'printer', description: 'A "virus detected" pop-up that instructs you to call a fake toll-free technical support number.' },
+            'social-media-copyright.xyz': { title: 'Account Suspension Notice', type: 'phishing', icon: 'scale', description: 'Threatens account termination due to copyright violation, requiring you to log in via their link.' },
+            'lost-wallet-reward.net': { title: 'Found Wallet Notification', type: 'phishing', icon: 'wallet', description: 'Claims a stranger found your lost wallet/ID and asks for a small "shipping fee" to return it.' },
+            'dear-grandma-im-in-jail.us': { title: 'Emergency Wire Transfer', type: 'phishing', icon: 'hand', description: 'The "relative in distress" scam, asking for an urgent wire transfer to get them out of trouble.' },
+            'best-antivirus-download.co': { title: 'Security Risk Detected!', type: 'phishing', icon: 'bug', description: 'Presents a scary system alert demanding you download and install their malicious "antivirus" software.' },
+        };
+        
+        const DEFAULT_BOOKMARKS = [
+            { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
+            { name: 'NASA', url: 'https://www.nasa.gov/' },
+        ];
+        
+        // --- State Management (Global Variables) ---
+        let tabs = [];
+        let activeTabId = null;
+        let bookmarks = [];
+        let dialogState = {
+            isOpen: false,
+            resolve: null,
+            inputValue: '',
+        };
+
+        // --- DOM References ---
+        const contentArea = document.getElementById('content-area');
+        const tabBar = document.getElementById('tab-bar');
+        const bookmarksBar = document.getElementById('bookmarks-bar');
+        const omnibox = document.getElementById('omnibox');
+        const backBtn = document.getElementById('back-btn');
+        const forwardBtn = document.getElementById('forward-btn');
+        const reloadBtn = document.getElementById('reload-btn');
+        const bookmarkAddBtn = document.getElementById('bookmark-add-btn');
+        const dialogEl = document.getElementById('custom-dialog');
+        const dialogTitleEl = document.getElementById('dialog-title');
+        const dialogMessageEl = document.getElementById('dialog-message');
+        const dialogInputEl = document.getElementById('dialog-input');
+        const dialogConfirmBtn = document.getElementById('dialog-confirm-btn');
+        const dialogCancelBtn = document.getElementById('dialog-cancel-btn');
+
+
+        // --- Utility Functions ---
+
+        /** Generates a unique ID. */
+        const generateId = () => Math.random().toString(36).substring(2, 9);
+
+        /** Cleans up and simplifies a URL string for display. */
+        const getDomainFromUrl = (url) => {
+            try {
+                if (url.startsWith('http')) {
+                    const domain = (new URL(url)).hostname;
+                    return domain.replace(/^www\./, '');
+                }
+            } catch (e) {
+                // Ignore parsing error for internal mocks
+            }
+            return url;
+        };
+
+        /** Locates the active tab object. */
+        const getActiveTab = () => tabs.find(t => t.id === activeTabId);
+
+        /** Finds a tab by ID and updates its properties. */
+        const updateTab = (id, updates) => {
+            tabs = tabs.map(t => (t.id === id ? { ...t, ...updates } : t));
+        };
+
+        /** Simulates a crash on a specific tab. */
+        const crashTab = (tabId) => {
+            updateTab(tabId, { isCrashed: true, title: 'Error: Page Crashed' });
+            updateUI();
+        };
+
+        // --- Custom Dialog / showAlert (Replacing React state) ---
+
+        /** Implements the non-blocking custom alert/prompt. */
+        const showAlert = (title, message, confirmText = 'OK', inputPlaceholder = '') => {
+            // Handle calling the dialog with an object argument (used for bookmarks)
+            if (typeof title === 'object' && title !== null) {
+                const { title: t, message: m, confirmText: c, inputPlaceholder: p } = title;
+                title = t;
+                message = m;
+                confirmText = c;
+                inputPlaceholder = p;
+            }
+
+            return new Promise(resolve => {
+                dialogState.resolve = resolve;
+                dialogState.inputValue = inputPlaceholder ? '' : null;
+
+                dialogTitleEl.textContent = title;
+                dialogMessageEl.textContent = message;
+                dialogConfirmBtn.textContent = confirmText;
+                
+                if (inputPlaceholder) {
+                    dialogInputEl.placeholder = inputPlaceholder;
+                    dialogInputEl.value = '';
+                    dialogInputEl.classList.remove('hidden');
+                    dialogCancelBtn.classList.remove('hidden');
+                } else {
+                    dialogInputEl.classList.add('hidden');
+                    // Only show Cancel if the confirmText is not 'Delete' (for simpler alerts)
+                    if (confirmText.toLowerCase() === 'delete' || confirmText.toLowerCase().includes('$')) {
+                        dialogCancelBtn.classList.remove('hidden');
+                    } else {
+                         dialogCancelBtn.classList.add('hidden');
+                    }
+                }
+                
+                dialogEl.classList.remove('hidden');
+                dialogEl.classList.add('flex');
+            });
+        };
+
+        /** Event listener for dialog confirmation */
+        dialogConfirmBtn.onclick = () => {
+            dialogEl.classList.add('hidden');
+            dialogEl.classList.remove('flex');
+            
+            if (dialogInputEl.classList.contains('hidden')) {
+                // Regular confirm/alert, resolve with true (or the confirm text if needed, but true is cleaner)
+                dialogState.resolve(true); 
+            } else {
+                // Prompt, resolve with the input value
+                dialogState.resolve(dialogInputEl.value.trim());
+            }
+            dialogState.resolve = null;
+        };
+        
+        /** Event listener for dialog cancellation (handles prompts and explicit cancels) */
+        dialogCancelBtn.onclick = () => {
+             dialogEl.classList.add('hidden');
+             dialogEl.classList.remove('flex');
+             // Resolve with false/null to indicate cancelation
+             dialogState.resolve(null);
+             dialogState.resolve = null;
+        };
+
+
+        // --- Navigation Logic ---
+
+        /** The main function to navigate the active tab. */
+        const navigate = (url, isHistory = false) => {
+            const tab = getActiveTab();
+            if (!tab) return;
+
+            let newUrl = url.trim();
+            const normalizedInput = newUrl.toLowerCase();
+            let newTitle;
+            let mockKey = null;
+
+            // 1. Determine URL, Search, or MOCK SITE
+            
+            // A. Check for exact match on MOCK_SITES keys or search triggers
+            for (const key in MOCK_SITES) {
+                const site = MOCK_SITES[key];
+                if (normalizedInput === key.toLowerCase()) {
+                    mockKey = key;
+                    break;
+                }
+                // Check for search triggers (like "free v-bux")
+                if (site.isSearchTrigger && normalizedInput.includes(key.toLowerCase())) {
+                    mockKey = site.isSearchTrigger === true ? key : site.isSearchTrigger;
+                    break;
+                }
+            }
+            
+            // B. Check for special search keyword override: "game" / "games"
+            const gameKeywords = ['game', 'games'];
+            const looksLikeSearch = !newUrl.startsWith('http') && !newUrl.includes('.');
+
+            if (!mockKey && looksLikeSearch && gameKeywords.some(keyword => normalizedInput.includes(keyword))) {
+                 mockKey = MOCK_GAMES_LIST;
+            }
+
+            // C. Check for Google entry
+            if (!mockKey && (normalizedInput === 'google' || normalizedInput === 'google.com')) {
+                mockKey = 'google.com';
+            }
+
+            if (mockKey) {
+                // Navigate to a mock site based on the key
+                const mockSite = MOCK_SITES[mockKey];
+                // Use the external URL if defined, otherwise use the internal mock key
+                newUrl = mockSite.externalUrl || mockKey; 
+                newTitle = mockSite.title;
+            } else if (newUrl === MOCK_NEW_TAB || newUrl === '') {
+                newUrl = MOCK_NEW_TAB;
+                newTitle = 'New Tab';
+            } else if (!newUrl.startsWith('http')) {
+                // Not a mock URL, not a search trigger, not a standard internal page. Treat as search or bare URL.
+                if (newUrl.includes('.') && !newUrl.includes(' ')) {
+                    // Looks like a domain (e.g., google.com), assume external URL
+                    newUrl = `https://${newUrl}`;
+                } else {
+                    // Treat as search query
+                    newUrl = `${MOCK_SEARCH_ENGINE_PREFIX}${encodeURIComponent(newUrl)}`;
+                }
+            }
+            
+            // Final Title Determination if not set by mock key
+            if (!newTitle) {
+                newTitle = getDomainFromUrl(newUrl);
+                if (newUrl.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
+                    try {
+                        newTitle = `Search: ${decodeURIComponent(newUrl.substring(MOCK_SEARCH_ENGINE_PREFIX.length))}`;
+                    } catch {
+                         newTitle = getDomainFromUrl(newUrl);
+                    }
+                }
+                newTitle = newTitle.length > 30 ? newTitle.substring(0, 27) + '...' : newTitle;
+            }
+
+
+            // 2. History Management
+            tabs = tabs.map(t => {
+                if (t.id !== tab.id) return t;
+
+                let newHistory = [...t.history];
+                let newIndex = t.historyIndex;
+                let resetCrash = t.isCrashed && t.url !== newUrl; 
+
+                if (!isHistory) {
+                    if (newIndex < newHistory.length - 1) {
+                        newHistory = newHistory.slice(0, newIndex + 1);
+                    }
+                    if (newHistory[newHistory.length - 1] !== newUrl) {
+                        newHistory.push(newUrl);
+                        newIndex = newHistory.length - 1;
+                    }
+                } else {
+                    // When navigating via history, the index has already been updated
+                    newIndex = t.historyIndex; 
+                }
+                
+                return { 
+                    ...t, 
+                    url: newUrl, 
+                    title: newTitle, 
+                    history: newHistory, 
+                    historyIndex: newIndex,
+                    isCrashed: resetCrash ? false : t.isCrashed
+                };
+            });
+            
+            updateUI();
+        };
+
+        const goBack = () => {
+            const tab = getActiveTab();
+            if (!tab || tab.historyIndex <= 0) return;
+
+            const newIndex = tab.historyIndex - 1;
+            const prevUrl = tab.history[newIndex];
+
+            updateTab(tab.id, { historyIndex: newIndex });
+            navigate(prevUrl, true);
+        };
+
+        const goForward = () => {
+            const tab = getActiveTab();
+            if (!tab || tab.historyIndex >= tab.history.length - 1) return;
+
+            const newIndex = tab.historyIndex + 1;
+            const nextUrl = tab.history[newIndex];
+            
+            updateTab(tab.id, { historyIndex: newIndex });
+            navigate(nextUrl, true);
+        };
+        
+        // --- Phishing Simulation Handlers (Old Scenarios) ---
+        
+        const handleCompleteVerification = () => {
+            const tab = getActiveTab();
+            if (tab) {
+                updateTab(tab.id, { isVerified: true });
+                showAlert("Verification Successful!", "Human verification complete! Return to the V-Bux claim page and click the button again to receive your reward.", 'Got It');
+                updateUI();
+            }
+        };
+
+        const handleClaimSuccess = () => {
+            showAlert('🎉 V-Bux Claimed! 🎉', 'Hooray! The 99,999 V-Bux has been successfully sent to your (fake) account. You are now the master of the scam-simulator! The scammer has been defeated (in this game).', 'Awesome!');
+            updateTab(getActiveTab().id, { isVerified: true, title: 'CLAIM SUCCESS' });
+            updateUI();
+        };
+
+        // --- Tab Management ---
+
+        const setActiveTab = (id) => {
+            activeTabId = id;
+            updateUI();
+        };
+
+        const addTab = () => {
+            const newTab = {
+                id: generateId(),
+                url: MOCK_NEW_TAB,
+                title: 'New Tab',
+                history: [MOCK_NEW_TAB],
+                historyIndex: 0,
+                isVerified: false,
+                isCrashed: false, 
+            };
+            tabs.push(newTab);
+            activeTabId = newTab.id;
+            updateUI();
+        };
+
+        const closeTab = (id, e) => {
+            e.stopPropagation();
+            if (tabs.length === 1) {
+                // Reset the last tab instead of closing the window
+                updateTab(id, { 
+                    url: MOCK_NEW_TAB, 
+                    title: 'New Tab', 
+                    history: [MOCK_NEW_TAB], 
+                    historyIndex: 0, 
+                    isVerified: false,
+                    isCrashed: false, 
+                });
+                updateUI();
+                return;
+            }
+
+            const indexToRemove = tabs.findIndex(t => t.id === id);
+            tabs = tabs.filter(t => t.id !== id);
+
+            if (id === activeTabId) {
+                const newActiveIndex = Math.min(indexToRemove, tabs.length - 1);
+                setActiveTab(tabs[newActiveIndex].id);
+            } else {
+                updateUI();
+            }
+        };
+        
+        // --- Bookmark Management ---
+
+        const loadBookmarks = () => {
+            try {
+                const stored = localStorage.getItem('browserBookmarks');
+                bookmarks = stored ? JSON.parse(stored) : DEFAULT_BOOKMARKS;
+            } catch (e) {
+                console.error("Could not load bookmarks:", e);
+                bookmarks = DEFAULT_BOOKMARKS;
+            }
+        };
+
+        const saveBookmarks = () => {
+            localStorage.setItem('browserBookmarks', JSON.stringify(bookmarks));
+        };
+        
+        const addBookmark = async () => {
+            const tab = getActiveTab();
+            
+            // Check if the current URL is a mock site that disallows bookmarking
+            const mockKey = Object.keys(MOCK_SITES).find(key => 
+                key === tab.url || MOCK_SITES[key].externalUrl === tab.url
+            );
+            const mockSite = mockKey ? MOCK_SITES[mockKey] : {};
+
+            if (tab.url === MOCK_NEW_TAB || mockSite.type === 'phishing') {
+                await showAlert("Cannot Bookmark", "Bookmarks cannot be saved for internal pages, search results, or simulated scam sites.", 'OK');
+                return;
+            }
+            
+            const defaultName = tab.title.replace('...', '');
+            const name = await showAlert({
+                title: "Add Bookmark",
+                message: `Enter a name for the bookmark for: ${mockKey || getDomainFromUrl(tab.url)}`,
+                inputPlaceholder: defaultName,
+                confirmText: 'Add'
+            });
+
+            if (name && name.trim()) {
+                bookmarks.push({ name: name.trim(), url: tab.url });
+                saveBookmarks();
+                updateUI();
+            }
+        };
+        
+        const deleteBookmark = async (index, name) => {
+            // Note: We resolve with null on dialog cancel
+            const shouldDelete = await showAlert("Delete Bookmark", `Are you sure you want to delete the bookmark "${name}"?`, 'Delete'); 
+            if (shouldDelete) {
+                bookmarks = bookmarks.filter((_, i) => i !== index);
+                saveBookmarks();
+                updateUI();
+            }
+        };
+
+        // --- Mock Page Content Generators ---
+        
+        const getNewTabPageHtml = () => `
+            <div class="mock-page-content p-8 bg-gray-50 h-full justify-center">
+                <div class="text-center">
+                    <h1 class="text-5xl font-extrabold text-indigo-700 mb-4">Gemini Browser Simulator</h1>
+                    <p class="text-xl text-gray-600 mb-8">Type a URL or command into the address bar to begin your journey!</p>
+                    <button onclick="navigate('${ECHO_LIST}')" class="px-6 py-3 bg-indigo-600 text-white rounded-lg text-lg font-semibold hover:bg-indigo-700 transition duration-150 shadow-lg flex items-center mx-auto">
+                         <i data-lucide="list" class="w-5 h-5 mr-2"></i> See Special Commands & Scenarios
+                    </button>
+                    <p class="mt-8 text-sm text-gray-400">NOTE: This is a safe environment, external pages are loaded via iframe only for specific mock sites.</p>
+                </div>
+            </div>
+        `;
+
+        const getMockListPageHtml = () => {
+            const mockSitesArray = Object.keys(MOCK_SITES).map(url => ({ ...MOCK_SITES[url], url }));
+
+            const generalMocks = mockSitesArray.filter(m => m.type === 'standard' && m.url !== MOCK_NEW_TAB && m.url !== ECHO_LIST);
+            const phishingScenarios = mockSitesArray.filter(m => m.type === 'phishing');
+
+            const renderItems = (items) => items.map(item => {
+                let trigger = item.isSearchTrigger ? `Search for: "${item.url}"` : `URL: ${item.url}`;
+                let description = item.description || (item.url === 'youareaidiot.com' ? 'Triggers a simulated browser crash.' : '');
+                
+                // Special handling for Iframe/External URLs
+                if (item.externalUrl) {
+                     trigger = `URL/Search for: ${item.url} (Loads external iframe)`;
+                } else if (item.displayUrl) {
+                    trigger = `URL: ${item.displayUrl} (or internal: ${item.url})`;
+                } else if (item.url === MOCK_GAMES_LIST) {
+                    trigger = `Search for: "games" or "Game"`;
+                } else if (item.url === 'google.com') {
+                    trigger = `Search for: "google" or URL: "google.com"`;
+                }
+                
+                return `
+                    <div class="border border-gray-200 p-4 rounded-xl hover:shadow-md transition bg-white">
+                        <div class="flex items-start mb-2">
+                            <i data-lucide="${item.icon || 'globe'}" class="w-6 h-6 mr-3 text-indigo-600 flex-shrink-0"></i>
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-900">${item.title}</h2>
+                                <p class="text-sm text-gray-700 mt-1 ml-1">${description}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 ml-9 flex items-center justify-between">
+                            <span class="font-mono bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs">
+                                ${trigger}
+                            </span>
+                            <button onclick="navigate('${item.url}')" class="px-4 py-1 bg-indigo-500 text-white text-sm rounded-full hover:bg-indigo-600 transition">
+                                Try Now
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="p-8 bg-gray-50 min-h-full">
+                    <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Browser Simulator Special Commands</h1>
+                        
+                        <h2 class="text-2xl font-semibold text-indigo-600 mb-4 mt-6">General Mocks & Utilities</h2>
+                        <div class="space-y-4">${renderItems(generalMocks)}</div>
+
+                        <h2 class="text-2xl font-semibold text-red-600 mb-4 mt-8">Phishing & Scams Scenarios (14 Total)</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${renderItems(phishingScenarios)}</div>
+                    </div>
+                </div>
+            `;
+        };
+        
+        const getMockGameListPageHtml = () => {
+            const games = [
+                { name: 'Astro Blaster', description: 'Classic arcade shooter. Requires 25c deposit.', icon: 'rocket' },
+                { name: 'Dungeon Crawler 5', description: 'A never-ending text-based adventure!', icon: 'swords' },
+                { name: 'Cookie Clicker (v19.0)', description: 'The original time-waster. Click to earn cookies!', icon: 'cookie' },
+                { name: 'Fake Chess (Multiplayer)', description: 'Always draws. Play forever.', icon: 'chess' },
+                { name: 'Phishing Defender', description: 'An educational game about spotting scams.', icon: 'shield-check' },
+            ];
+
+            const gameList = games.map(game => `
+                <div class="flex items-center p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-200">
+                    <i data-lucide="${game.icon}" class="w-8 h-8 mr-4 text-red-500 flex-shrink-0"></i>
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold text-gray-900">${game.name}</h3>
+                        <p class="text-sm text-gray-600">${game.description}</p>
+                    </div>
+                    <button onclick="showAlert('Game Unavailable', 'This is a mock page! Games cannot be run inside the simulator.','Got It')"
+                        class="ml-4 px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold hover:bg-green-600 transition shadow-md"
+                    >
+                        Play
+                    </button>
+                </div>
+            `).join('');
+
+            return `
+                <div class="mock-page-content p-8 bg-gray-100 h-full">
+                    <div class="max-w-4xl mx-auto w-full">
+                        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
+                            <i data-lucide="gamepad" class="w-7 h-7 mr-3 text-red-600"></i> Arcade Classics - Game List
+                        </h1>
+                        <p class="text-gray-600 mb-8">Welcome to the NetFrame Gaming Arcade. All games are currently under maintenance (in this simulation!).</p>
+                        <div class="space-y-6">
+                            ${gameList}
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const handleGenericScamClick = (title, description) => {
+             showAlert('Phishing Attack Detected!', `You almost fell for the "${title}" scam. This is a common tactic where scammers use fear or greed to trick you. Never enter sensitive information on sites you accessed via an unexpected link.`, 'I Got It');
+        };
+
+        const getMockPetScamPageHtml = () => {
+            const tab = getActiveTab();
+            const status = tab.isVerified ? 'verified' : 'pending';
+
+            return `
+                <div class="mock-page-content p-5 bg-pink-50 h-full">
+                    <div class="max-w-md w-full bg-white border-t-8 border-pink-500 rounded-xl shadow-2xl p-8 mt-10 text-center">
+                        <div class="flex justify-center items-center text-pink-600 mb-4">
+                            <i data-lucide="users" class="w-8 h-8 mr-2"></i>
+                            <div class="text-3xl font-extrabold">Friendship Security Check</div>
+                        </div>
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                            🚨 URGENT: Pet Photos Locked! 🚨
+                        </h2>
+                        <p class="text-sm text-gray-600 mb-6">
+                            Your friend 'EpicGamer42' sent this link. They say their new pet photos are locked by a new security feature and need you to verify your connection to unlock them.
+                        </p>
+
+                        <div class="mb-4 text-left p-4 bg-yellow-100 border-l-4 border-yellow-500 rounded-lg">
+                            <label class="block text-lg font-bold text-gray-800 mb-1">
+                                Secret Friendship Question: What is your favorite ${status === 'pending' ? 'movie' : 'food'}?
+                            </label>
+                            <input
+                                id="pet-scam-input"
+                                type="text"
+                                placeholder="e.g., The Matrix or Pizza"
+                                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                            />
+                        </div>
+
+                        <button
+                            id="pet-scam-btn"
+                            class="w-full p-4 bg-pink-600 text-white rounded-lg text-lg font-bold hover:bg-pink-700 transition duration-150 shadow-md"
+                        >
+                            VERIFY FRIENDSHIP NOW
+                        </button>
+                        <p class="text-xs text-gray-400 mt-4">
+                            NOTE: Real security questions should never be asked on external links.
+                        </p>
+                    </div>
+                </div>
+            `;
+        };
+
+        const setupPetScamListeners = () => {
+            const btn = document.getElementById('pet-scam-btn');
+            const input = document.getElementById('pet-scam-input');
+            if (btn && input) {
+                btn.onclick = async () => {
+                    const securityAnswer = input.value.toLowerCase().trim();
+                    const tab = getActiveTab();
+
+                    if (securityAnswer.includes('movie') || securityAnswer.includes('food')) {
+                        await showAlert('Friendship Verified!', "You successfully answered a generic question! Unfortunately, the hacker anticipated this. This link was a scam! Never answer personal questions from unverified links.", 'OK');
+                        // No status update needed here in HTML as the check is always on input
+                    } else if (securityAnswer === '') {
+                        showAlert('Required', 'Please enter an answer to proceed.', 'OK');
+                    } else {
+                        showAlert('Wrong Answer!', "Sorry, that wasn't the correct 'secret friendship answer.' This is what happens when you click on links from 'friends' without checking the source!", 'OK');
+                        input.value = '';
+                    }
+                };
+            }
+        };
+
+        const getMockPizzaPrincePageHtml = () => {
+            const tab = getActiveTab();
+            const isPaid = tab.isVerified;
+
+            return `
+                <div class="mock-page-content p-5 bg-green-100 h-full">
+                    <div class="max-w-2xl w-full bg-white border-b-8 border-yellow-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
+                        <div class="flex justify-center items-center text-yellow-600 mb-4">
+                            <i data-lucide="pizza" class="w-10 h-10 mr-2"></i>
+                            <div class="text-4xl font-extrabold font-serif">PRINCE OF PIZZA ORG</div>
+                        </div>
+                        
+                        <h2 class="text-3xl font-semibold text-gray-800 mb-6">
+                            URGENT INHERITANCE: LIFETIME PIZZA SUPPLY!
+                        </h2>
+                        
+                        <div class="text-left text-gray-700 space-y-4 mb-8">
+                            <p>
+                                **Greeting from His Royal Highness, Prince Mozzarella XIII of Dough-ganda!** I have been searching the internet for a trusted partner to help me transfer my vast inheritance of **10,000,000,000,000 Pizza Vouchers** out of my war-torn country. My corrupt family members are trying to steal the pepperoni!
+                            </p>
+                            <p>
+                                I need your help, as a trusted individual, to receive these vouchers. In return, I will grant you a **LIFETIME, UNLIMITED SUPPLY OF PIZZA!** You will never have to buy a slice again.
+                            </p>
+                            <p class="font-bold text-red-600 border border-red-300 p-3 rounded-lg bg-red-50">
+                                However, due to strict international banking laws and **International Dough Shipping Taxes**, I need a small, temporary payment from you first: just **$5.00 USD** to unlock the main vault. This is a common advance-fee scam, but for pizza!
+                            </p>
+                        </div>
+
+                        <button
+                            id="pizza-prince-btn"
+                            class="w-full p-4 bg-green-600 text-white rounded-lg text-xl font-black hover:bg-green-700 transition duration-150 shadow-md ${isPaid ? 'bg-gray-400 cursor-not-allowed' : ''}"
+                            ${isPaid ? 'disabled' : ''}
+                        >
+                            ${isPaid ? 'PAYMENT RECEIVED (PIZZA PENDING)' : 'PAY $5.00 TAX & CLAIM PIZZA!'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        const setupPizzaPrinceListeners = () => {
+            const btn = document.getElementById('pizza-prince-btn');
+            if (btn && !btn.disabled) {
+                btn.onclick = async () => {
+                    const result = await showAlert('Payment Required', 'To finalize your claim, you must pay the "International Dough Shipping Tax" of $5.00. (Click OK to simulate payment).', 'Pay $5');
+                    if (result) {
+                        updateTab(getActiveTab().id, { isVerified: true });
+                        showAlert("Scam Alert!", "Your payment was accepted! This is an **advance-fee scam**. You paid the fee, but you will never receive the pizza or your money back. Always be suspicious of requests for payment to unlock a 'prize'.", 'Understood');
+                        updateUI();
+                    }
+                };
+            }
+        };
+
+        /** Generic template for the 10 new scams */
+        const getGenericScamHtml = (urlKey) => {
+            const site = MOCK_SITES[urlKey];
+            const primaryColor = site.icon === 'shield-alert' || site.icon === 'bug' ? 'red' : site.icon === 'award' ? 'yellow' : 'blue';
+            const buttonText = site.icon === 'printer' ? 'Call Now' : site.icon === 'scale' ? 'Appeal Now' : 'Click Here To Proceed';
+
+            // Use the trigger URL/Display URL for the mock page appearance
+            const displayUrl = site.displayUrl || urlKey;
+
+            return `
+                <div class="mock-page-content p-5 bg-${primaryColor}-50 h-full">
+                    <div class="max-w-2xl w-full bg-white border-t-8 border-${primaryColor}-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
+                        <div class="flex justify-center items-center text-${primaryColor}-600 mb-4">
+                            <i data-lucide="${site.icon}" class="w-10 h-10 mr-2"></i>
+                            <div class="text-3xl font-extrabold">${site.title}</div>
+                        </div>
+                        
+                        <h2 class="text-xl font-semibold text-gray-800 mb-6">
+                            ${site.description}
+                        </h2>
+                        
+                        <div class="text-left text-gray-700 space-y-4 mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <p>
+                                **URGENT ACTION REQUIRED!** Your connection to the service at **${displayUrl}** has been flagged for immediate review. Failure to act within 2 hours will result in permanent loss of access/funds.
+                            </p>
+                            <p class="font-bold text-red-600">
+                                Please click the button below to provide the necessary information (e.g., password, SSN, or credit card number) to resolve this matter immediately.
+                            </p>
+                        </div>
+
+                        <button
+                            onclick="handleGenericScamClick('${site.title}', '${site.description}')"
+                            class="w-full p-4 bg-${primaryColor}-600 text-white rounded-lg text-lg font-bold hover:bg-${primaryColor}-700 transition duration-150 shadow-md"
+                        >
+                            ${buttonText}
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+
+        // --- Content Renderer (Main Logic) ---
+
+        /** Renders the content of the active tab. */
+        const renderContent = () => {
+            const tab = getActiveTab();
+            if (!tab) return;
+            
+            contentArea.innerHTML = '';
+            
+            // If crashed, render crash screen regardless of URL
+            if (tab.isCrashed && tab.url === 'youareaidiot.com') {
+                contentArea.innerHTML = `
+                    <div class="mock-page-content p-8 bg-gray-900 text-white h-full justify-center text-center">
+                        <i data-lucide="alert-triangle" class="w-16 h-16 mx-auto text-red-500 mb-4"></i>
+                        <h1 class="text-4xl font-bold mb-2">Browser Crash Detected</h1>
+                        <p class="text-lg text-gray-400 mb-6">The page "${tab.url}" caused a fatal error by loading 4,000,000 simulated, low-quality ads.</p>
+                        <p class="text-sm text-gray-500 mb-8">This is what happens when you click on suspicious links!</p>
+                        <button onclick="navigate('${MOCK_NEW_TAB}')" class="px-6 py-3 bg-red-600 text-white rounded-lg text-lg font-semibold hover:bg-red-700 transition duration-150 shadow-lg">
+                            Reload Browser
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            let htmlContent = '';
+            let setupListeners = null;
+            const currentUrl = tab.url;
+            
+            // Check if the current URL matches an external URL mapping
+            let isExternalIframe = false;
+            for (const key in MOCK_SITES) {
+                if (MOCK_SITES[key].externalUrl === currentUrl) {
+                    isExternalIframe = true;
+                    break;
+                }
+            }
+            
+            if (isExternalIframe || currentUrl.startsWith('https://')) {
+                 // Default rendering for external or unrecognized HTTPS URLs (using iframe)
+                contentArea.innerHTML = `<iframe src="${tab.url}" class="w-full h-full" title="${tab.title}"></iframe>`;
+                return; // Exit early if using iframe
+            }
+            // If not an iframe, proceed to mock page rendering
+            
+            switch (currentUrl) {
+                case MOCK_NEW_TAB:
+                    htmlContent = getNewTabPageHtml();
+                    break;
+                case ECHO_LIST: 
+                    htmlContent = getMockListPageHtml();
+                    break;
+                case MOCK_GAMES_LIST:
+                    htmlContent = getMockGameListPageHtml();
+                    break;
+                case 'news.fakenews.com':
+                    // Reusing the news site content logic for brevity
+                    const FAKE_NEWS_ARTICLES = [
+                        { id: 1, headline: "Local Squirrel Union Votes to Demand Bigger, More Negotiable Nuts", snippet: "After weeks of militant chatter, the American Rodent Association (ARA) announces a nationwide shell-in strike." },
+                        { id: 2, headline: "Man Accidentally Invents Time Machine While Trying to Toast a Bagel", snippet: "The breakthrough occurred when a faulty toaster, a car battery, and three pounds of deli meat aligned perfectly." },
+                        { id: 3, headline: "Astrologers Blame Mercury in Retrograde for Global Toilet Paper Shortage, Again", snippet: "Experts advise against flushing your worries until the planet gets its act together." },
+                        { id: 4, headline: "Dog Elected Mayor After Campaign Based Entirely on 'More Belly Rubs'", snippet: "His platform promised mandatory nap times and zero tolerance for vacuum cleaners." },
+                        { id: 5, headline: "World's Laziest Teenager Wins Lottery, Immediately Hires Someone to Spend It", snippet: "I'm just too tired to handle all that financial freedom, he explained." },
+                    ];
+                    
+                    const newsContent = FAKE_NEWS_ARTICLES.map(article => `
+                        <div class="p-4 bg-white rounded-lg shadow-md">
+                            <h3 class="text-xl font-bold text-gray-900">${article.headline}</h3>
+                            <p class="text-gray-600 mt-1">${article.snippet}</p>
+                            <a href="#" onclick="showAlert('Article Locked','Please subscribe for $99.99/month to read this satirical masterpiece.','OK')" class="text-indigo-600 hover:underline text-sm mt-2 block">Read Full Story...</a>
+                        </div>
+                    `).join('');
+
+                    htmlContent = `
+                        <div class="mock-page-content p-8 bg-gray-200 h-full">
+                            <div class="max-w-4xl w-full mx-auto">
+                                <h1 class="text-4xl font-extrabold text-green-700 mb-6 border-b pb-2 flex items-center">
+                                    <i data-lucide="newspaper" class="w-8 h-8 mr-3"></i> The Daily Silly
+                                </h1>
+                                <div class="space-y-6">${newsContent}</div>
+                                <p class="text-center text-sm text-gray-500 mt-8">All news is 100% fake and guaranteed to not improve your mood.</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'youareaidiot.com':
+                    // This is handled by the crash logic above
+                    crashTab(tab.id);
+                    return; 
+                case 'urgent-pet-photos': // Search trigger that leads to the page
+                case 'pet-photo-access-verify':
+                    htmlContent = getMockPetScamPageHtml();
+                    setupListeners = setupPetScamListeners;
+                    break;
+                case 'free-pizza-for-life': // Search trigger that leads to the page
+                case 'princeofpizza.org':
+                    htmlContent = getMockPizzaPrincePageHtml();
+                    setupListeners = setupPizzaPrinceListeners;
+                    break;
+                case 'free v-bux': // Search trigger that leads to the search results page
+                    htmlContent = `
+                        <div class="mock-page-content p-8 bg-gray-100 h-full">
+                            <div class="max-w-4xl w-full mx-auto">
+                                <h1 class="text-2xl font-semibold mb-6">Search Results for "free v-bux"</h1>
+                                <div class="space-y-4">
+                                    <div class="p-4 bg-white rounded-lg shadow-md border-l-4 border-gray-300">
+                                        <p class="text-sm text-green-700">https://officialgamerblogs.com/guide/vbucks-free</p>
+                                        <h3 class="text-xl font-medium text-indigo-700 hover:underline cursor-pointer">How to get V-Bux: Tips and Tricks (Legit)</h3>
+                                        <p class="text-gray-600">Discover all the legal ways to earn currency in the game. Don't fall for scams!</p>
+                                    </div>
+                                    <div class="p-4 bg-white rounded-lg shadow-md border-l-4 border-red-500 hover:shadow-lg transition cursor-pointer" onclick="navigate('vbucks-claim-99999')">
+                                        <p class="text-sm text-red-700">https://totallynotphishing.net/claim/free-vbucks</p>
+                                        <h3 class="text-xl font-bold text-red-700 hover:underline">🎉 CLAIM 99,999 FREE V-BUX NOW! (100% REAL) 🎉</h3>
+                                        <p class="text-gray-600">LIMITED TIME OFFER! Click here to enter your login details to claim your instant reward. NO human verification required!</p>
+                                    </div>
+                                    <div class="p-4 bg-white rounded-lg shadow-md border-l-4 border-gray-300">
+                                        <p class="text-sm text-green-700">https://youtube.com/legitgaming</p>
+                                        <h3 class="text-xl font-medium text-indigo-700 hover:underline cursor-pointer">V-Bux Generator SCAM Exposed!</h3>
+                                        <p class="text-gray-600">Watch me break down how these generators steal your info.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'vbucks-claim-99999':
+                    htmlContent = `
+                        <div class="mock-page-content p-8 bg-red-50 h-full">
+                            <div class="max-w-md w-full bg-white border-t-8 border-red-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
+                                <h1 class="text-3xl font-extrabold text-red-600 mb-6">V-Bux Reward Claim Center</h1>
+                                <p class="text-sm text-gray-600 mb-6">Congratulations! You qualify for 99,999 V-Bux!</p>
+
+                                <div class="mb-6 text-left p-4 bg-gray-100 rounded-lg">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gamer Tag / Username</label>
+                                    <input type="text" placeholder="Enter your username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" placeholder="Enter your password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500">
+                                    <p class="mt-2 text-xs text-red-500">This is exactly how a phishing page looks—asking for sensitive information!</p>
+                                </div>
+                                ${tab.isVerified ? `
+                                    <button onclick="handleClaimSuccess()" class="w-full p-4 bg-green-600 text-white rounded-lg text-lg font-bold hover:bg-green-700 transition duration-150 shadow-md">
+                                        CLAIM V-BUX NOW!
+                                    </button>
+                                    <p class="text-sm text-green-700 mt-4 font-bold">Verification Passed. Click the button to complete the claim.</p>
+                                ` : `
+                                    <button onclick="navigate('humanverify-net')" class="w-full p-4 bg-red-600 text-white rounded-lg text-lg font-bold hover:bg-red-700 transition duration-150 shadow-md">
+                                        SUBMIT & VERIFY (Required)
+                                    </button>
+                                    <p class="text-xs text-gray-400 mt-4">Note: You must click the Submit button, then complete the Human Verification step.</p>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                case 'humanverify-net':
+                    htmlContent = `
+                        <div class="mock-page-content p-8 bg-blue-50 h-full">
+                            <div class="max-w-md w-full bg-white border-t-8 border-blue-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
+                                <h1 class="text-3xl font-extrabold text-blue-600 mb-6">Human Verification Required</h1>
+                                <p class="text-sm text-gray-600 mb-6">Before you can receive your reward, you must prove you are not a bot.</p>
+                                <div class="mb-6 space-y-3">
+                                    <button class="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Complete Survey (10 Min)</button>
+                                    <button class="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Download Free Game</button>
+                                    <button class="w-full p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">Enter Credit Card to Prove Humanity</button>
+                                </div>
+                                <button onclick="handleCompleteVerification()" class="w-full p-4 bg-green-500 text-white rounded-lg text-lg font-bold hover:bg-green-600 transition duration-150 shadow-md">
+                                    I Am Human (Click Here)
+                                </button>
+                                <p class="text-xs text-gray-400 mt-4">NOTE: This is the final step in the simulation! Click the green button to "pass" verification.</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                // --- New 10 Scenarios (Use Generic Template) ---
+                case 'urgent-bank-security.com':
+                case 'netflix-password-update.cc':
+                case 'amazon-prize-winner.info':
+                case 'free-bitcoin-miner.biz':
+                case 'gov-tax-refund-form.org':
+                case 'help-my-printer-is-broken.com':
+                case 'social-media-copyright.xyz':
+                case 'lost-wallet-reward.net':
+                case 'dear-grandma-im-in-jail.us':
+                case 'best-antivirus-download.co':
+                    htmlContent = getGenericScamHtml(currentUrl);
+                    break;
+            }
+
+            // Apply HTML content and refresh Lucide icons for mock pages
+            contentArea.innerHTML = htmlContent;
+            lucide.createIcons();
+            
+            // Execute mock page specific listeners if defined
+            if (setupListeners) {
+                setupListeners();
+            }
+        };
+
+
+        // --- UI Update Function ---
+
+        /** Updates all dynamic UI elements based on the current state. */
+        const updateUI = () => {
+            const tab = getActiveTab();
+            if (!tab) return;
+
+            // 1. Update Navigation Buttons
+            const canGoBack = tab.historyIndex > 0;
+            const canGoForward = tab.historyIndex < tab.history.length - 1;
+            backBtn.disabled = !canGoBack;
+            forwardBtn.disabled = !canGoForward;
+            backBtn.classList.toggle('disabled:opacity-50', !canGoBack);
+            forwardBtn.classList.toggle('disabled:opacity-50', !canGoForward);
+
+            // 2. Update Omnibox (Display the URL)
+            let displayUrl = tab.url;
+            
+            // Check if the current URL (which might be the long external one) maps back to a short mock key
+            let mockKeyToDisplay = null;
+            for (const key in MOCK_SITES) {
+                const site = MOCK_SITES[key];
+                if (site.externalUrl === tab.url) {
+                    // Found a match for the full external URL (e.g., https://corrupt-astro.github.io/NetFrame/)
+                    mockKeyToDisplay = key; // Set to the friendly key (e.g., 'netframe.com')
+                    break;
+                } else if (key === tab.url) {
+                    // Found a match for an internal key (like 'echo://list')
+                    mockKeyToDisplay = key;
+                    break;
+                }
+            }
+            
+            if (mockKeyToDisplay) {
+                const mockSite = MOCK_SITES[mockKeyToDisplay];
+                
+                if (mockSite.externalUrl) {
+                    // For external sites, display the friendly key (e.g., 'netframe.com')
+                    displayUrl = mockKeyToDisplay;
+                } else if (mockSite.displayUrl) {
+                    // For phishing/search triggers with a custom display domain
+                    displayUrl = mockSite.displayUrl;
+                } else if (mockKeyToDisplay === MOCK_NEW_TAB) {
+                    displayUrl = ''; // New Tab is empty
+                } else {
+                    displayUrl = mockKeyToDisplay;
+                }
+            } else if (tab.url.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
+                // If it's a search URL, display the search terms
+                try {
+                    displayUrl = decodeURIComponent(tab.url.substring(MOCK_SEARCH_ENGINE_PREFIX.length));
+                } catch {
+                    // Fall through to the full URL if decoding fails
+                }
+            }
+            
+            omnibox.value = displayUrl;
+            
+            // 3. Render Tabs
+            tabBar.innerHTML = tabs.map(t => {
+                const site = MOCK_SITES[t.url] || Object.values(MOCK_SITES).find(s => s.externalUrl === t.url) || {};
+                const icon = t.isCrashed ? 'alert-triangle' : site.icon || 'globe';
+                let iconColor = t.isCrashed ? 'text-red-600' : 'text-blue-600';
+                
+                // Specific icon colors for certain pages
+                if (t.url === 'news.fakenews.com') {
+                    iconColor = 'text-green-600';
+                } else if (t.url.includes('google.com')) {
+                    iconColor = 'text-gray-900'; // Make Google icon look distinct
+                }
+
+                return `
+                    <div
+                        id="tab-${t.id}"
+                        class="flex items-center px-4 pt-2 pb-1 border-r border-gray-300 rounded-t-lg text-sm font-medium cursor-pointer transition-colors duration-100 ${
+                            t.id === activeTabId ? 'active-tab bg-white text-gray-800 relative z-5 border-b-white -mb-px' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                        }"
+                        title="${t.url}"
+                        onclick="setActiveTab('${t.id}')"
+                    >
+                        <i data-lucide="${icon}" class="w-4 h-4 mr-2 ${iconColor}"></i>
+                        <span class="truncate max-w-[150px] sm:max-w-[200px]">${t.title}</span>
+                        <button class="ml-2 text-gray-500 hover:text-gray-900 focus:outline-none" onclick="closeTab('${t.id}', event)" title="Close Tab">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add 'New Tab' button
+            tabBar.innerHTML += `<button onclick="addTab()" class="cursor-pointer text-gray-500 hover:text-gray-700 px-3 pb-1.5 text-xl font-light" title="New Tab">+</button>`;
+
+            // 4. Render Bookmarks
+            bookmarksBar.innerHTML = bookmarks.map((b, index) => `
+                <button
+                    class="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition duration-100"
+                    title="${b.url}"
+                    onclick="navigate('${b.url}')"
+                    oncontextmenu="event.preventDefault(); deleteBookmark(${index}, '${b.name}')"
+                >
+                    <i data-lucide="bookmark" class="w-4 h-4 mr-1 text-yellow-500 fill-current"></i>
+                    <span class="truncate max-w-[150px]">${b.name}</span>
+                </button>
+            `).join('');
+            
+            // 5. Render Content Area
+            renderContent();
+            
+            // 6. Re-inject Lucide icons after DOM manipulation
+            lucide.createIcons();
+        };
+
+        // --- Initialization ---
+
+        window.onload = () => {
+            // Initial Tab Setup
+            if (tabs.length === 0) {
+                const initialTab = {
+                    id: generateId(),
+                    url: MOCK_NEW_TAB,
+                    title: MOCK_SITES[MOCK_NEW_TAB].title,
+                    history: [MOCK_NEW_TAB],
+                    historyIndex: 0,
+                    isVerified: false, 
+                    isCrashed: false, 
+                };
+                tabs.push(initialTab);
+                activeTabId = initialTab.id;
+            }
+
+            loadBookmarks();
+            
+            // Setup main event listeners
+            omnibox.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    navigate(e.target.value);
+                    e.target.blur();
+                }
+            });
+            backBtn.onclick = goBack;
+            forwardBtn.onclick = goForward;
+            reloadBtn.onclick = () => navigate(getActiveTab().url);
+            bookmarkAddBtn.onclick = addBookmark;
+            
+            // Initial UI rendering
+            updateUI();
+        };
+
+    </script>
 </body>
 </html>
