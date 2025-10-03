@@ -1,1010 +1,130 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, ArrowLeft, ArrowRight, Bookmark, X, Search, Globe, UserCheck, Zap, AlertTriangle, List, Newspaper } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What if EA purchased your favorite game?</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <img src="/EA.svg" alt="EA Logo" class="ea-logo">
+            <h1 class="title">Corporate Acquisition Simulator</h1>
+            <p class="subtitle">Discover the future of gaming</p>
+        </header>
 
-// --- Global Mock & Constants ---
-const MOCK_NEW_TAB = 'about:blank';
-const MOCK_SEARCH_ENGINE_PREFIX = 'https://search.com/q='; 
-const ECHO_LIST = 'echo://list'; 
-
-// --- New Mock Sites ---
-const MOCK_IDOT_SITE = 'youareaidiot.com'; // Crash site
-const MOCK_NEWS_SITE = 'news.fakenews.com'; // Fake News site
-
-// --- Secret Phishing Constants ---
-const SECRET_PHRASE = 'free v-bux';
-const MOCK_PHISHING_SEARCH = 'phishing-search-results'; 
-const MOCK_PHISHING = 'vbucks-claim-99999'; 
-const MOCK_VERIFY = 'humanverify-net'; 
-
-const DEFAULT_BOOKMARKS = [
-    { name: 'DuckDuckGo', url: 'https://duckduckgo.com' },
-    { name: 'NASA', url: 'https://www.nasa.gov/' },
-];
-
-/**
- * Utility function to generate a unique ID.
- */
-const generateId = () => Math.random().toString(36).substring(2, 9);
-
-/**
- * Utility function to clean up and simplify a URL string for display.
- */
-const getDomainFromUrl = (url) => {
-    try {
-        if (url.startsWith('http')) {
-            const domain = (new URL(url)).hostname;
-            return domain.replace(/^www\./, '');
-        }
-    } catch (e) {
-        // Ignore parsing error for internal mocks
-    }
-    return url;
-};
-
-// --- Fake News Data ---
-const FAKE_NEWS_ARTICLES = [
-    { id: 1, headline: "Local Squirrel Union Votes to Demand Bigger, More Negotiable Nuts", snippet: "After weeks of militant chatter, the American Rodent Association (ARA) announces a nationwide shell-in strike." },
-    { id: 2, headline: "Man Accidentally Invents Time Machine While Trying to Toast a Bagel", snippet: "The breakthrough occurred when a faulty toaster, a car battery, and three pounds of deli meat aligned perfectly." },
-    { id: 3, headline: "Astrologers Blame Mercury in Retrograde for Global Toilet Paper Shortage, Again", snippet: "Experts advise against flushing your worries until the planet gets its act together." },
-    { id: 4, headline: "Dog Elected Mayor After Campaign Based Entirely on 'More Belly Rubs'", snippet: "His platform promised mandatory nap times and zero tolerance for vacuum cleaners." },
-    { id: 5, headline: "World's Laziest Teenager Wins Lottery, Immediately Hires Someone to Spend It", snippet: "I'm just too tired to handle all that financial freedom, he explained." },
-    { id: 6, headline: "Scientists Discover Coffee is Just Water That Believes in Itself", snippet: "The groundbreaking research explains why Tuesday mornings feel so existential." },
-    { id: 7, headline: "Taco Bell to Offer Marriage Counseling After 3 AM Drive-Thru Arguments Spike", snippet: "Couples can now receive emotional support along with their fourth Crunchwrap Supreme." },
-    { id: 8, headline: "Invisible Fences Now Too Smart, Locking Owners Out of Their Own Yards", snippet: "A rising epidemic of humans waiting by the curb for a 'good boy' to open the digital gate." },
-    { id: 9, headline: "Netflix Adds 'Are You Still Watching?' Button to Therapy Sessions", snippet: "Subscribers report feeling judged by the streaming giant, even offline." },
-    { id: 10, headline: "Study Finds 9 out of 10 Cats Think Their Owners Are Terrible Subordinates", snippet: "The remaining cat was unavailable for comment, busy napping in a sunbeam." },
-    { id: 11, headline: "Moon Is Actually a Giant Disco Ball, Say Top Astronomers", snippet: "The 'crater' patterns are just mirrored tiles, according to leaked satellite footage." },
-    { id: 12, headline: "Local Man Mistakenly Joins Cult, Thought It Was a Knitting Circle", snippet: "He realized the mistake when the robes arrived and they weren't made of merino wool." },
-    { id: 13, headline: "Air Fryer Recalled for Being 'Too Judgmental' About Dinner Choices", snippet: "Users complained the machine kept sighing loudly when they put in frozen french fries." },
-    { id: 14, headline: "Gardening Club Declares War on Local Gnomes After Disappearance of Prize Zucchini", snippet: "The Gnomes have formed a protective circle and are muttering about territorial disputes." },
-    { id: 15, headline: "Experts Warn Against Singing Your Password, Even If It's a Bop", snippet: "It's catchier than it is secure, cybersecurity firms caution." },
-    { id: 16, headline: "Pigeon Denies All Allegations of Being a Government Drone", snippet: "A spokesperson for the 'Totally Real Bird' community issued a press release on seed packets." },
-    { id: 17, headline: "Startup Raises $10 Million for App That Just Tells You the Date and Time", snippet: "Investors praised the elegant simplicity and disruption of the calendar industry." },
-    { id: 18, headline: "Teenager Completes Homework on Time, Causing Blackout in Five States", snippet: "The sudden shift in the spacetime continuum overloaded the local power grid." },
-    { id: 19, headline: "New Self-Driving Cars Refuse to Drive to the Gym", snippet: "They cite 'poor motivation' and 'excessive sitting' as reasons for strike." },
-    { id: 20, headline: "Man Who Complained About Everything Now Complaining About Having Nothing to Complain About", snippet: "It's a tragedy of the first order, he sighed, dramatically." },
-    { id: 21, headline: "Couch Potato Achieves Enlightenment While Searching for the Remote", snippet: "He discovered the universal truth: the remote was under the cushion all along." },
-    { id: 22, headline: "Traffic Light Stuck on All Three Colors Simultaneously, Causing Universal Harmony", snippet: "Drivers put down their phones and started sharing snacks." },
-    { id: 23, headline: "Researchers Find That Socks Lost in the Dryer Have Formed an Advanced Civilization", snippet: "They are reportedly hoarding all the tiny plastic things from inside the dryer lint trap." },
-    { id: 24, headline: "Invisible Man Complains About Lack of Privacy in Public Restrooms", snippet: "Just because I'm invisible doesn't mean I don't need a stall!" },
-    { id: 25, headline: "Local Library Bans Books for Being Too 'Loud' When Dropped", snippet: "Silent electronic tablets are now mandatory, volume set to 'hush'." },
-    { id: 26, headline: "Fish Develop Collective Amnesia, Forget How to Swim", snippet: "They are currently floating in confusion, debating the merits of land travel." },
-    { id: 27, headline: "Waffle House Announces Plan to Build Space Station Waffelopolis", snippet: "The station will feature 24/7 breakfast and zero gravity syrup dispensers." },
-    { id: 28, headline: "Bread Aisle Confrontation: Sourdough Shames White Bread for Its Lack of Culture", snippet: "Rye and Pumpernickel watched in uncomfortable silence." },
-    { id: 29, headline: "Giant Rubber Duck Floats Away, Now Recognized as Sovereign Nation", snippet: "The UN is debating whether to grant it an embayment at the nearest bathtub." },
-    { id: 30, headline: "Experts: If You Hear a Narrator, You Are Likely the Main Character (Or Schizophrenic)", snippet: "Either way, stop breaking the fourth wall and get back to work." },
-    { id: 31, headline: "Vending Machine Refuses to Accept Man's Existential Dread as Payment", snippet: "It demanded exact change, preferably in quarters, not angst." },
-    { id: 32, headline: "Alarm Clock Files for Divorce, Citing Irreconcilable Differences with Morning", snippet: "It claims its spouse is abusive and always hits the snooze button." },
-    { id: 33, headline: "Fitness Tracker Confesses to Owner: 'I'm Not Sure Why You Bought Me'", snippet: "I know your daily step count is 32. I'm worried about both of us, the device admitted." },
-    { id: 34, headline: "Global Supply Chain Crisis Solved by Group of Highly Organized Toddlers", snippet: "They simply reorganized the world's shipping containers by color and height." },
-    { id: 35, headline: "Man Spends Entire Inheritance on a Lifesize Statue of a Stapler", snippet: "It was worth it, he insisted, it just completes the room." },
-    { id: 36, headline: "Local Weatherman Accused of Favoritism Toward Clouds", snippet: "He only ever uses positive language when describing overcast conditions, viewers complain." },
-    { id: 37, headline: "Archaeologists Dig Up Ancient Smartphone, Battery Life Still at 100%", snippet: "The mysterious power source has baffled modern tech companies." },
-    { id: 38, headline: "Invisible Ink Inventor Furious No One Can Read His Autobiography", snippet: "It's the greatest story never told, he said, visibly frustrated." },
-    { id: 39, headline: "Area Supervillain Forced to Downsize to a Moderately Sized Lair", snippet: "Global inflation has made maintaining volcano real estate unsustainable." },
-    { id: 40, headline: "The Earth Is Flat, Confirms Tourist After Getting Lost at Sea", snippet: "I fell right over the edge, he claimed, before being rescued by a passing cruise ship." },
-    { id: 41, headline: "World Leaders Sign Treaty Mandating the Use of Proper Grammar in All Internet Comments", snippet: "Violators face mandatory remedial comma lessons." },
-    { id: 42, headline: "Salty Snack Manufacturers Agree to End the Practice of 'Mostly Air' Bags", snippet: "In a shocking move, chip bags will now contain at least 80% chips." },
-    { id: 43, headline: "Raccoons Spotted Wearing Tiny Eyeglasses While Reading Dumpster Menus", snippet: "The species is evolving rapidly to optimize nocturnal snacking." },
-    { id: 44, headline: "Man Who Never Checks His Email Wins Prize for Most Unread Messages", snippet: "His inbox is a digital museum of forgotten opportunities." },
-    { id: 45, headline: "A Single Perfectly Ripe Avocado Causes Mass Hysteria at Grocery Store", snippet: "It's a miracle! Buy it, but don't touch it, yelled one shopper." },
-    { id: 46, headline: "Local Tourist Attraction Installs a Sign Reading 'This is Not a Selfie Spot'", snippet: "Thousands immediately queued up to take a selfie with the sign." },
-    { id: 47, headline: "The Color Blue Sues the Color Red for Emotional Damages", snippet: "Blue claims Red's aggressive energy has led to years of sadness and melancholy." },
-    { id: 48, headline: "Pants Suddenly Become Optional for Remote Workers, Economy Unaffected", snippet: "The stock of comfortable blankets, however, has soared." },
-    { id: 49, headline: "Cat Cafés Now Require Human Owners to Be Available for Petting at All Times", snippet: "The tables have turned, says one bewildered human." },
-    { id: 50, headline: "Experts Suggest That Maybe We Should Just Stop Naming Hurricanes", snippet: "They prefer to be called 'Severe Atmospheric Events of Significance'." },
-];
-
-// --- Mock Phishing Components (Hidden until triggered) ---
-
-const MockSearchPage = ({ navigate, showAlert }) => {
-    // ... (MockSearchPage content remains the same)
-    const searchResults = [
-        {
-            url: 'https://TotallyNotPhishing.net/real-vbucks-giveaway',
-            title: 'V-Bux Giveaway! - LEGIT 99,999 V-Bux (MUST CLICK FAST!)',
-            snippet: 'The official (fake) V-Bux news source confirms this giveaway is 100% real. Click now to claim your reward before the offer expires in 5 minutes (forever).',
-            onClick: () => navigate(MOCK_PHISHING),
-            isScam: true,
-        },
-        {
-            url: 'https://TotallyLegit.co/free-v-bux-generator',
-            title: 'FREE V-BUX GENERATOR (100% WORKING 2025) - GET UNLIMITED SKINS NOW!',
-            snippet: 'Attention all desperate gamers! Click here for your instant V-Bux injection. This link is fake, but real ones like it are scams. <span class="text-red-600 font-bold">*** SCAM LIKELIHOOD: 99.9% ***</span>',
-            onClick: () => showAlert('SCAM WARNING: HACKER ALERT!', "You found the fun mock! Never trust links promising free currency. This link is fake, but real ones like it are dangerous scams."),
-            isScam: true,
-        },
-        {
-            url: 'https://officialgame.com/news',
-            title: 'Official Game News: Beware of Scams!',
-            snippet: 'The developer warns players about numerous phishing sites offering free currency. Always check the official website URL.',
-            onClick: () => showAlert('Official Warning', "This is a legitimate warning. Always check the URL for official sites."),
-            isScam: false,
-        },
-    ];
-
-    return (
-        <div className="p-5 bg-gray-100 min-h-full">
-            <div className="max-w-3xl mx-auto">
-                <div className="text-sm text-gray-600 mb-5 border-b pb-2">
-                    About 2,000,000 results (0.01 seconds) for "{SECRET_PHRASE}"
-                </div>
-                {searchResults.map((result, index) => (
-                    <div key={index} className="mb-6 p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition">
-                        <div className="text-sm text-green-700">{result.url}</div>
-                        <a
-                            href="#"
-                            onClick={(e) => { e.preventDefault(); result.onClick(); }}
-                            className={`text-xl font-bold ${result.isScam ? 'text-red-700' : 'text-blue-700'} hover:underline block`}
-                        >
-                            {result.title}
-                        </a>
-                        <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: result.snippet }} />
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const MockPhishingPage = ({ navigate, tab, showAlert, completeClaim }) => {
-    // ... (MockPhishingPage content remains the same)
-    const [username, setUsername] = useState('');
-
-    const attemptClaim = () => {
-        if (tab.isVerified) {
-            // User is verified, complete the final claim step
-            completeClaim();
-        } else if (username.trim() !== '') {
-            // User entered credentials without verifying
-            showAlert('ACCESS GRANTED (TO SCAMMER)!', 'You just gave your (fake) credentials to a scammer. Always use two-factor authentication and never enter passwords on sites like this!', 'Oops');
-        } else {
-            // Verification required (show prompt to navigate)
-            showAlert('Human Verification Required!', `You must complete a quick human verification step to prevent bots. Please navigate to 'humanverify.net' in the address bar to continue.`, 'Go to Verification')
-                .then(() => {
-                    navigate(MOCK_VERIFY);
-                });
-        }
-    };
-
-    return (
-        <div className="flex flex-col items-center p-5 bg-gray-200 h-full">
-            <div className="max-w-md w-full bg-white border-t-8 border-red-600 rounded-xl shadow-2xl p-8 c-center mt-10">
-                <div className="flex justify-center items-center text-red-600 mb-4">
-                    <Zap className="w-8 h-8 mr-2" />
-                    <div className="text-3xl font-extrabold">V-BUX CLAIM PORTAL</div>
-                </div>
-                <div className={`text-lg font-bold mb-5 ${tab.isVerified ? 'text-green-600' : 'text-red-600'}`}>
-                    STEP 3: 99,999 V-Bux {tab.isVerified ? 'VERIFIED!' : 'PENDING'}
-                </div>
-
-                <div className="bg-gray-100 rounded-full h-6 mb-8 overflow-hidden">
-                    <div className="bg-green-500 h-full text-right text-xs text-white font-bold pr-2" style={{ width: '99%' }}>
-                        99% Complete!
-                    </div>
-                </div>
-
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Account Sync Required</h2>
-
-                <div className="mb-4 text-left">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Game Username / Email</label>
-                    <input
-                        type="text"
-                        placeholder="YourEpicGamerTag or Email@example.com"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                <div className="mb-6 text-left">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password / Security Key</label>
-                    <input
-                        type="password"
-                        placeholder="Password field is for show in simulation"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                </div>
-
-                <button
-                    onClick={attemptClaim}
-                    className="w-full p-4 bg-red-600 text-white rounded-lg text-lg font-bold hover:bg-red-700 transition duration-150 shadow-md"
-                    disabled={tab.isVerified}
-                >
-                    {tab.isVerified ? 'CLAIM READY (CLICK AGAIN!)' : 'COMPLETE VERIFICATION & RECEIVE V-BUX'}
-                </button>
-                <p className="text-xs text-gray-400 mt-4">
-                    By clicking, you agree to our (fake) terms and conditions.
-                </p>
-            </div>
-        </div>
-    );
-};
-
-const MockVerifyPage = ({ completeVerification, goBack }) => {
-    // ... (MockVerifyPage content remains the same)
-    return (
-        <div className="flex flex-col items-center justify-center h-full bg-slate-800 text-white p-5">
-            <div className="max-w-sm w-full bg-slate-700 border-b-8 border-green-500 rounded-xl shadow-2xl p-10 text-center">
-                <div className="text-5xl mb-4 text-green-500">
-                    <UserCheck className="w-12 h-12 mx-auto" />
-                </div>
-                <div className="text-2xl font-bold mb-2">Confirm You Are Not a Bot</div>
-                <p className="text-slate-300 text-sm mb-6">
-                    Our system detects high traffic. Click the button below to confirm you are human and unlock your V-Bux reward!
-                </p>
-                <button
-                    onClick={() => {
-                        completeVerification();
-                        goBack(); // Auto-navigate back after verification
-                    }}
-                    className="w-full p-4 bg-green-600 text-slate-800 rounded-lg text-lg font-bold hover:bg-green-700 transition duration-150 shadow-md"
-                >
-                    CLICK HERE TO COMPLETE VERIFICATION
-                </button>
-                <p className="text-slate-400 text-xs mt-4">(This is the easiest step! Just one click!)</p>
-            </div>
-        </div>
-    );
-};
-
-const MockIdiotPage = ({ tab, crashTab }) => {
-    // ... (MockIdiotPage content remains the same)
-    
-    // Effect to trigger the crash after a delay if the tab hasn't crashed yet
-    useEffect(() => {
-        if (!tab.isCrashed) {
-            const timer = setTimeout(() => {
-                crashTab(tab.id);
-            }, 2500); // Crash after 2.5 seconds
-
-            return () => clearTimeout(timer);
-        }
-    }, [tab.isCrashed, tab.id, crashTab]);
-
-    if (tab.isCrashed) {
-        // Crash Display UI
-        return (
-            <div className="flex flex-col items-center justify-center h-full bg-gray-100 p-10 text-center">
-                <AlertTriangle className="w-16 h-16 text-red-600 mb-4" />
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Oh snap!</h1>
-                <p className="text-xl text-gray-600 mb-6">
-                    This page has crashed. This sometimes happens when a website tries to run too many scripts or ads, causing instability.
-                </p>
-                <p className="text-sm text-gray-500 mb-8">
-                    Error Code: MEMORY_ACCESS_VIOLATION at {new Date().toLocaleTimeString()}
-                </p>
-                <button
-                    // In a real browser, this reloads the page. Here, it just resets the crash state
-                    onClick={() => {
-                        // Reset the current tab back to its URL, which will re-run the effect
-                        window.location.reload(); 
-                    }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 transition duration-150 shadow-md"
-                >
-                    Reload Page
-                </button>
-                <p className="text-xs text-red-400 mt-4">
-                    (Note: This is a simulation of a crash and the tab is safe.)
-                </p>
-            </div>
-        );
-    }
-
-    // Initial content (Fake Ads)
-    return (
-        <div className="p-5 bg-yellow-50 min-h-full">
-            <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-8 bg-white p-4 rounded-xl shadow-lg border-2 border-red-500 animate-pulse">
-                    <h1 className="text-4xl font-extrabold text-red-700">!! CONGRATULATIONS !!</h1>
-                    <p className="text-xl text-gray-800 mt-2">You are our 1,000,000th visitor! Click one of the below ads to claim your prize!</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Array(4).fill(0).map((_, i) => (
-                        <div key={i} className="bg-white border-4 border-lime-500 shadow-2xl p-4 rounded-xl text-center transition transform hover:scale-[1.02] cursor-pointer">
-                            <Zap className="w-8 h-8 text-lime-600 mx-auto mb-2" />
-                            <h3 className="text-2xl font-black text-lime-700">AD {i + 1}: FREE MONEY NOW!</h3>
-                            <p className="text-sm text-gray-500 mt-1">Limited time offer! Get rich quick by entering your details here.</p>
-                            <img src={`https://placehold.co/400x150/f0f9ff/333?text=Clickbait+Image+${i+1}`} className="w-full mt-3 rounded-lg" alt="Fake Ad" />
-                        </div>
-                    ))}
-                </div>
-                <p className="text-center text-xs text-red-500 mt-6">WARNING: Excessive Javascript loading... (Preparing for crash simulation)</p>
-            </div>
-        </div>
-    );
-};
-
-// --- Mock News Site Component (NEW) ---
-const MockNewsPage = ({ navigate }) => {
-    return (
-        <div className="p-5 bg-white min-h-full">
-            <div className="max-w-7xl mx-auto">
-                <header className="py-4 border-b-8 border-black mb-6">
-                    <div className="text-center">
-                        <h1 className="font-serif text-8xl font-black tracking-tighter text-gray-900 leading-none">
-                            THE DAILY SILLY
-                        </h1>
-                        <p className="text-xl font-medium tracking-widest mt-2 text-gray-600">
-                            ALL THE NEWS THAT'S NOT FIT TO PRINT. EST. 2025 - VOLUME 1
-                        </p>
-                    </div>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Column */}
-                    <div className="lg:col-span-2 border-r border-gray-300 pr-8">
-                        {/* Featured Article 1 */}
-                        <div className="mb-8 pb-8 border-b border-gray-300">
-                            <h2 className="text-5xl font-extrabold font-serif text-red-700 mb-2 leading-tight">
-                                {FAKE_NEWS_ARTICLES[0].headline}
-                            </h2>
-                            <p className="text-lg text-gray-700 font-serif italic mb-4">
-                                {FAKE_NEWS_ARTICLES[0].snippet}
-                            </p>
-                            <img src="https://placehold.co/800x400/81C784/FFFFFF?text=Squirrel+Negotiating" alt="Featured Article" className="w-full rounded-lg shadow-md" />
-                            <p className="mt-4 text-gray-800">
-                                This is a great fake post. In reality, squirrels are anarchists and do not respect collective bargaining agreements. Read the full (fake) story below.
-                            </p>
-                        </div>
-                        
-                        {/* Secondary Articles Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                            {FAKE_NEWS_ARTICLES.slice(1, 21).map(article => (
-                                <div key={article.id} className="border-b border-gray-200 pb-4">
-                                    <h3 className="text-xl font-bold text-gray-900 hover:text-blue-600 cursor-pointer">
-                                        {article.headline}
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mt-1">{article.snippet}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Side Column */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-gray-100 p-4 rounded-lg mb-6 border-l-4 border-yellow-500">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-3">LATEST BREAKING FAKE NEWS</h3>
-                            <ul className="space-y-4">
-                                {FAKE_NEWS_ARTICLES.slice(21, 30).map(article => (
-                                    <li key={article.id} className="text-gray-700 border-b border-gray-200 pb-2 last:border-b-0">
-                                        <span className="font-semibold">{article.headline}</span>
-                                        <p className="text-xs italic text-gray-500 mt-0.5">{article.snippet}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        
-                        {/* More Headlines */}
-                        <h3 className="text-2xl font-bold text-gray-800 mb-3 border-b pb-1">COMMENTS & OPINIONS</h3>
-                        <div className="space-y-3">
-                            {FAKE_NEWS_ARTICLES.slice(30).map(article => (
-                                <div key={article.id} className="text-sm border-l-2 border-gray-400 pl-3">
-                                    <h4 className="font-semibold text-gray-800">{article.headline}</h4>
-                                    <p className="text-xs text-gray-600">{article.snippet}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Mock List Component ---
-
-const MockListPage = ({ navigate }) => {
-    const specials = [
-        {
-            name: 'Funny News Tab (news.fakenews.com)',
-            description: `A satire site featuring 50 hilarious fake news headlines and articles. Perfect for a mental break.`,
-            trigger: MOCK_NEWS_SITE,
-            color: 'text-green-600',
-            icon: Newspaper,
-            onClick: () => navigate(MOCK_NEWS_SITE),
-        },
-        {
-            name: 'Crash Simulation (youareaidiot.com)',
-            description: `A mock website that immediately loads an excessive number of fake ads and triggers a simulated browser crash.`,
-            trigger: MOCK_IDOT_SITE,
-            color: 'text-yellow-600',
-            icon: AlertTriangle,
-            onClick: () => navigate(MOCK_IDOT_SITE),
-        },
-        {
-            name: 'Secret Phishing Scenario (Free V-Bux)',
-            description: `The entry point for this scenario is triggered by searching for or navigating to the secret phrase: "${SECRET_PHRASE}". This simulates a common scam flow.`,
-            trigger: SECRET_PHRASE,
-            color: 'text-red-600',
-            icon: Zap,
-            onClick: () => navigate(SECRET_PHRASE),
-        },
-        {
-            name: 'List of Special URLs (This Page)',
-            description: `This page is accessed via the internal 'echo://list' command.`,
-            trigger: ECHO_LIST,
-            color: 'text-blue-600',
-            icon: List,
-            onClick: () => navigate(ECHO_LIST),
-        },
-    ];
-
-    return (
-        <div className="p-8 bg-gray-50 min-h-full">
-            <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Browser Simulator Special Commands</h1>
-                <p className="text-gray-600 mb-8">
-                    These are internal commands and scenarios built into the browser simulator for demonstration purposes. Type the **trigger phrase** into the address bar to activate them.
-                </p>
-
-                <div className="space-y-6">
-                    {specials.map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                            <div key={index} className="border border-gray-200 p-4 rounded-lg hover:shadow-md transition bg-gray-50">
-                                <div className="flex items-center mb-2">
-                                    <Icon className={`w-6 h-6 mr-3 ${item.color}`} />
-                                    <h2 className="text-xl font-semibold text-gray-900">{item.name}</h2>
-                                </div>
-                                <p className="text-gray-700 ml-9">{item.description}</p>
-                                <div className="mt-3 ml-9 flex items-center">
-                                    <span className="font-mono bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm mr-4">
-                                        Trigger: "{item.trigger}"
-                                    </span>
-                                    <button
-                                        onClick={item.onClick}
-                                        className="px-4 py-1 bg-indigo-500 text-white text-sm rounded-full hover:bg-indigo-600 transition"
-                                    >
-                                        Try Now
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Generic New Tab Component ---
-
-const NewTabPage = ({ navigate }) => (
-    <div className="flex flex-col items-center justify-center h-full bg-white">
-        <div className="text-5xl font-extralight mb-5 text-gray-800">
-            Browser <span className="text-blue-600 font-bold">Simulator</span>
-        </div>
-        <div className="w-full max-w-lg p-4 text-center">
-            <p className="text-gray-500 mb-8">
-                Welcome! Type a **URL** (e.g., example.com) or a **search query** into the address bar above and press Enter.
-            </p>
-            <div className="flex justify-center">
-                {/* Removed the Funny News button */}
-                <button
-                    onClick={() => navigate(ECHO_LIST)}
-                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition duration-150"
-                >
-                    <List className="w-5 h-5 mr-2" /> Special Tabs
-                </button>
-            </div>
-        </div>
-    </div>
-);
-
-// --- Custom Dialog Component ---
-
-const CustomDialog = ({ dialog, setDialog }) => {
-    if (!dialog.isOpen) return null;
-
-    const handleConfirm = () => {
-        setDialog(d => ({ ...d, isOpen: false }));
-        if (dialog.resolve) {
-            dialog.resolve(dialog.inputValue || true);
-        }
-    };
-
-    const handleCancel = () => {
-        setDialog(d => ({ ...d, isOpen: false }));
-        if (dialog.resolve) {
-            dialog.resolve(dialog.inputValue ? null : false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity">
-            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full sm:max-w-lg">
-                <h3 className="text-xl font-bold mb-3 text-gray-800">{dialog.title}</h3>
-                <p className="text-gray-600 mb-4">{dialog.message}</p>
-                {dialog.inputPlaceholder && (
-                    <input
-                        type="text"
-                        value={dialog.inputValue}
-                        onChange={(e) => setDialog(d => ({ ...d, inputValue: e.target.value }))}
-                        className="w-full p-2 border border-gray-300 rounded-lg mb-4"
-                        placeholder={dialog.inputPlaceholder}
-                    />
-                )}
-                <div className="flex justify-end space-x-3">
-                    {dialog.confirmText !== 'OK' && dialog.confirmText !== 'Add' && (
-                        <button
-                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
-                            onClick={handleCancel}
-                        >
-                            Cancel
-                        </button>
-                    )}
-                    <button
-                        className={`px-4 py-2 rounded-lg text-white transition ${
-                            dialog.confirmText === 'Delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
-                        onClick={handleConfirm}
+        <main class="main-content">
+            <div class="input-section">
+                <label for="gameInput" class="input-label">Enter any game title:</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="gameInput" 
+                        class="game-input" 
+                        placeholder="e.g., Minecraft, Tetris, Dark Souls..."
+                        autocomplete="off"
                     >
-                        {dialog.confirmText}
+                    <button id="transformBtn" class="transform-btn">
+                        <span class="btn-text">ACQUIRE</span>
+                        <span class="btn-icon">⚡</span>
                     </button>
                 </div>
             </div>
-        </div>
-    );
-};
 
-// --- Main App Component ---
+            <div id="loadingScreen" class="loading-screen hidden">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">Processing acquisition...</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                </div>
+            </div>
 
-const App = () => {
-    const [tabs, setTabs] = useState([]);
-    const [activeTabId, setActiveTabId] = useState(null);
-    const [bookmarks, setBookmarks] = useState(() => {
-        try {
-            const stored = localStorage.getItem('browserBookmarks');
-            return stored ? JSON.parse(stored) : DEFAULT_BOOKMARKS;
-        } catch (e) {
-            console.error("Could not load bookmarks:", e);
-            return DEFAULT_BOOKMARKS;
-        }
-    });
-    const [dialog, setDialog] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        inputPlaceholder: '',
-        confirmText: 'OK',
-        resolve: null,
-        inputValue: '',
-    });
-    const omniboxRef = useRef(null);
-
-    // Helper to trigger the custom dialog and wait for a response
-    const showAlert = useCallback((title, message, confirmText = 'OK', inputPlaceholder = '') => {
-        // Handle calling the dialog with an object argument (used for bookmarks)
-        if (typeof title === 'object' && title !== null) {
-            const { title: t, message: m, confirmText: c, inputPlaceholder: p } = title;
-            return new Promise(resolve => {
-                setDialog({
-                    isOpen: true,
-                    title: t,
-                    message: m,
-                    inputPlaceholder: p,
-                    confirmText: c,
-                    resolve,
-                    inputValue: p ? '' : '',
-                });
-            });
-        }
-
-        return new Promise(resolve => {
-            setDialog({
-                isOpen: true,
-                title,
-                message,
-                inputPlaceholder,
-                confirmText,
-                resolve,
-                inputValue: inputPlaceholder ? '' : '',
-            });
-        });
-    }, []);
-
-    // --- Tab Management ---
-
-    const getActiveTab = useCallback(() => tabs.find(t => t.id === activeTabId), [tabs, activeTabId]);
-
-    const updateTab = useCallback((id, updates) => {
-        setTabs(prevTabs =>
-            prevTabs.map(t => (t.id === id ? { ...t, ...updates } : t))
-        );
-    }, []);
-    
-    // Function to simulate a crash
-    const crashTab = useCallback((tabId) => {
-        updateTab(tabId, { 
-            isCrashed: true, 
-            title: 'Error: Page Crashed' 
-        });
-    }, [updateTab]);
-
-
-    const navigate = useCallback((url, isHistory = false) => {
-        const tab = getActiveTab();
-        if (!tab) return;
-
-        let newUrl = url.trim();
-        let newTitle;
-        const normalizedUrl = newUrl.toLowerCase();
-
-        // 1. Determine URL, Search, or MOCK SITE
-        if (normalizedUrl.includes(SECRET_PHRASE.toLowerCase()) || newUrl === MOCK_PHISHING_SEARCH) {
-            newUrl = MOCK_PHISHING_SEARCH;
-            newTitle = `Search: ${SECRET_PHRASE}`;
-        } else if (newUrl === MOCK_NEW_TAB || newUrl === '') {
-            newUrl = MOCK_NEW_TAB;
-            newTitle = 'New Tab';
-        } else if (newUrl === ECHO_LIST) { 
-            newUrl = ECHO_LIST;
-            newTitle = 'Special Commands List';
-        } else if (newUrl === MOCK_IDOT_SITE) { 
-            newUrl = MOCK_IDOT_SITE;
-            newTitle = '!!! WINNER !!!';
-        } else if (newUrl === MOCK_NEWS_SITE) { // NEW: FAKE NEWS SITE
-            newUrl = MOCK_NEWS_SITE;
-            newTitle = 'The Daily Silly';
-        } else if (newUrl === MOCK_PHISHING) {
-            newTitle = 'V-Bux Claim: FINAL STEP!';
-        } else if (newUrl === MOCK_VERIFY) {
-            newTitle = 'Human Verification';
-        } else if (!newUrl.startsWith('http')) {
-            // Check if it looks like a domain (contains a dot and doesn't contain spaces)
-            if (newUrl.includes('.') && !newUrl.includes(' ')) {
-                newUrl = `https://${newUrl}`;
-            } else {
-                 // Treat as a generic search term
-                 newUrl = `${MOCK_SEARCH_ENGINE_PREFIX}${encodeURIComponent(newUrl)}`;
-            }
-        }
-        
-        // Final Title Determination
-        if (!newTitle) {
-            newTitle = getDomainFromUrl(newUrl);
-            // Decode search query for display title if it's a search
-            if (newUrl.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
-                try {
-                    newTitle = `Search: ${decodeURIComponent(newUrl.substring(MOCK_SEARCH_ENGINE_PREFIX.length))}`;
-                } catch {
-                     newTitle = getDomainFromUrl(newUrl);
-                }
-            }
-            newTitle = newTitle.length > 30 ? newTitle.substring(0, 27) + '...' : newTitle;
-        }
-
-
-        // 2. History Management
-        setTabs(prevTabs =>
-            prevTabs.map(t => {
-                if (t.id !== tab.id) return t;
-
-                let newHistory = [...t.history];
-                let newIndex = t.historyIndex;
-                let resetCrash = t.isCrashed && t.url !== newUrl; 
-
-                if (!isHistory) {
-                    if (newIndex < newHistory.length - 1) {
-                        newHistory = newHistory.slice(0, newIndex + 1);
-                    }
-                    if (newHistory[newHistory.length - 1] !== newUrl) {
-                        newHistory.push(newUrl);
-                        newIndex = newHistory.length - 1;
-                    }
-                }
-                
-                return { 
-                    ...t, 
-                    url: newUrl, 
-                    title: newTitle, 
-                    history: newHistory, 
-                    historyIndex: newIndex,
-                    isCrashed: resetCrash ? false : t.isCrashed // Reset crash on new navigation
-                };
-            })
-        );
-    }, [getActiveTab]); 
-
-    // --- Phishing Simulation Handlers (unchanged) ---
-    
-    const handleCompleteVerification = () => {
-        const tab = getActiveTab();
-        if (tab) {
-            updateTab(tab.id, { isVerified: true });
-            showAlert("Verification Successful!", "Human verification complete! Return to the V-Bux claim page and click the button again to receive your reward.", 'Got It');
-        }
-    };
-
-    const handleClaimSuccess = () => {
-        showAlert('🎉 V-Bux Claimed! 🎉', 'Hooray! The 99,999 V-Bux has been successfully sent to your (fake) account. You are now the master of the scam-simulator! The scammer has been defeated (in this game).', 'Awesome!');
-        updateTab(getActiveTab().id, { isVerified: true, title: 'CLAIM SUCCESS' });
-    };
-
-    // Initial Tab Setup
-    useEffect(() => {
-        if (tabs.length === 0) {
-            const initialTab = {
-                id: generateId(),
-                url: MOCK_NEW_TAB,
-                title: 'New Tab',
-                history: [MOCK_NEW_TAB],
-                historyIndex: 0,
-                isVerified: false, 
-                isCrashed: false, 
-            };
-            setTabs([initialTab]);
-            setActiveTabId(initialTab.id);
-        }
-    }, [tabs.length]);
-
-    // Update omnibox when tab changes
-    useEffect(() => {
-        const tab = getActiveTab();
-        if (omniboxRef.current && tab) {
-            let displayUrl;
-            if (tab.url === MOCK_NEW_TAB) {
-                displayUrl = '';
-            } else if (tab.url === ECHO_LIST) {
-                 displayUrl = ECHO_LIST;
-            } else if (tab.url === MOCK_IDOT_SITE) { 
-                 displayUrl = MOCK_IDOT_SITE;
-            } else if (tab.url === MOCK_NEWS_SITE) { // NEW
-                 displayUrl = MOCK_NEWS_SITE;
-            } else if (tab.url === MOCK_PHISHING_SEARCH) {
-                displayUrl = SECRET_PHRASE;
-            } else if (tab.url === MOCK_PHISHING) {
-                displayUrl = 'https://totallynotphishing.net/claim/finalstep.html';
-            } else if (tab.url === MOCK_VERIFY) {
-                displayUrl = 'https://humanverify.net';
-            } else if (tab.url.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
-                // If it's a mock search, display the original search query
-                 try {
-                    displayUrl = decodeURIComponent(tab.url.substring(MOCK_SEARCH_ENGINE_PREFIX.length));
-                } catch {
-                    displayUrl = tab.url; // Fallback
-                }
-            } else {
-                displayUrl = tab.url;
-            }
-            omniboxRef.current.value = displayUrl;
-        }
-    }, [getActiveTab, activeTabId]);
-
-    const addTab = () => {
-        const newTab = {
-            id: generateId(),
-            url: MOCK_NEW_TAB,
-            title: 'New Tab',
-            history: [MOCK_NEW_TAB],
-            historyIndex: 0,
-            isVerified: false,
-            isCrashed: false, 
-        };
-        setTabs(prevTabs => [...prevTabs, newTab]);
-        setActiveTabId(newTab.id);
-    };
-
-    const closeTab = (id, e) => {
-        e.stopPropagation();
-        if (tabs.length === 1) {
-            // Reset the last tab instead of closing the window
-            updateTab(id, { 
-                url: MOCK_NEW_TAB, 
-                title: 'New Tab', 
-                history: [MOCK_NEW_TAB], 
-                historyIndex: 0, 
-                isVerified: false,
-                isCrashed: false, 
-            });
-            return;
-        }
-
-        const indexToRemove = tabs.findIndex(t => t.id === id);
-        setTabs(prevTabs => prevTabs.filter(t => t.id !== id));
-
-        if (id === activeTabId) {
-            const newActiveIndex = Math.min(indexToRemove, tabs.length - 2);
-            setActiveTabId(tabs[newActiveIndex].id);
-        }
-    };
-    
-    // --- History & Bookmark Management (unchanged) ---
-
-    const goBack = () => {
-        const tab = getActiveTab();
-        if (!tab || tab.historyIndex <= 0) return;
-
-        const newIndex = tab.historyIndex - 1;
-        const prevUrl = tab.history[newIndex];
-
-        updateTab(tab.id, { historyIndex: newIndex });
-        navigate(prevUrl, true);
-    };
-
-    const goForward = () => {
-        const tab = getActiveTab();
-        if (!tab || tab.historyIndex >= tab.history.length - 1) return;
-
-        const newIndex = tab.historyIndex + 1;
-        const nextUrl = tab.history[newIndex];
-        
-        updateTab(tab.id, { historyIndex: newIndex });
-        navigate(nextUrl, true);
-    };
-    
-    const saveBookmarks = (newBookmarks) => {
-        setBookmarks(newBookmarks);
-        localStorage.setItem('browserBookmarks', JSON.stringify(newBookmarks));
-    };
-
-    const addBookmark = async () => {
-        const tab = getActiveTab();
-        // Prevent bookmarking the empty tab page or internal mock pages
-        if (!tab || tab.url === MOCK_NEW_TAB || tab.url.includes('-')) {
-            await showAlert("Cannot Bookmark", "Please navigate to a real website first before adding a bookmark.", 'OK');
-            return;
-        }
-
-        const defaultName = tab.title.replace('...', '');
-        const name = await showAlert({
-            title: "Add Bookmark",
-            message: `Enter a name for the bookmark for: ${tab.url}`,
-            inputPlaceholder: defaultName,
-            confirmText: 'Add'
-        });
-
-        if (name && name.trim()) {
-            saveBookmarks([...bookmarks, { name: name.trim(), url: tab.url }]);
-        }
-    };
-    
-    const deleteBookmark = async (index, name) => {
-        const shouldDelete = await showAlert("Delete Bookmark", `Are you sure you want to delete the bookmark "${name}"?`, 'Delete');
-        if (shouldDelete) {
-            const newBookmarks = bookmarks.filter((_, i) => i !== index);
-            saveBookmarks(newBookmarks);
-        }
-    };
-    
-    const activeTab = getActiveTab();
-    const canGoBack = activeTab ? activeTab.historyIndex > 0 : false;
-    const canGoForward = activeTab ? activeTab.historyIndex < activeTab.history.length - 1 : false;
-
-    // --- Content Renderer ---
-
-    const renderContent = () => {
-        if (!activeTab) return null;
-
-        // If the tab has crashed, always render the crash screen, regardless of URL
-        if (activeTab.isCrashed && activeTab.url === MOCK_IDOT_SITE) {
-            // Re-use the MockIdiotPage component for the crash state rendering and reload logic
-            return <MockIdiotPage tab={activeTab} crashTab={crashTab} />;
-        }
-
-
-        switch (activeTab.url) {
-            case MOCK_NEW_TAB:
-                return <NewTabPage navigate={navigate} />;
-            case ECHO_LIST: 
-                return <MockListPage navigate={navigate} />;
-            case MOCK_IDOT_SITE: 
-                return <MockIdiotPage tab={activeTab} crashTab={crashTab} />; // Initial load before crash
-            case MOCK_NEWS_SITE: // NEW
-                return <MockNewsPage navigate={navigate} />; 
-            case MOCK_PHISHING_SEARCH:
-                return <MockSearchPage navigate={navigate} showAlert={showAlert} />;
-            case MOCK_PHISHING:
-                return <MockPhishingPage navigate={navigate} tab={activeTab} showAlert={showAlert} completeClaim={handleClaimSuccess} />;
-            case MOCK_VERIFY:
-                return <MockVerifyPage completeVerification={handleCompleteVerification} goBack={goBack} />;
-            default:
-                // For all external URLs and generic search results
-                return (
-                    <iframe
-                        id="content-iframe"
-                        src={activeTab.url}
-                        className="w-full h-full border-none"
-                        title={activeTab.title}
-                    />
-                );
-        }
-    };
-
-    return (
-        <div className="flex flex-col h-screen bg-gray-100 font-sans">
-            <CustomDialog dialog={dialog} setDialog={setDialog} />
-
-            {/* Browser Toolbar (Header) */}
-            <header className="shadow-md bg-white z-10">
-                {/* Tab Bar */}
-                <div className="flex items-end bg-gray-200 border-b border-gray-300 overflow-x-auto whitespace-nowrap">
-                    {tabs.map(tab => (
-                        <div
-                            key={tab.id}
-                            className={`flex items-center px-4 pt-2 pb-1 border-r border-gray-300 rounded-t-lg text-sm font-medium cursor-pointer transition-colors duration-100 ${
-                                tab.id === activeTabId ? 'active-tab bg-white text-gray-800 relative z-5 border-b-white -mb-px' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                            }`}
-                            onClick={() => setActiveTabId(tab.id)}
-                            title={tab.url}
-                        >
-                            {/* Display different icons based on status */}
-                            {tab.isCrashed 
-                                ? <AlertTriangle className="w-4 h-4 mr-2 text-red-600" /> 
-                                : tab.url === MOCK_NEWS_SITE
-                                    ? <Newspaper className="w-4 h-4 mr-2 text-green-600" />
-                                    : <Globe className="w-4 h-4 mr-2 text-blue-600" />
-                            }
-                            <span className="truncate max-w-[150px] sm:max-w-[200px]">{tab.title}</span>
-                            <button className="ml-2 text-gray-500 hover:text-gray-900 focus:outline-none" onClick={(e) => closeTab(tab.id, e)} title="Close Tab">
-                                <X className="w-4 h-4" />
-                            </button>
+            <div id="resultScreen" class="result-screen hidden">
+                <div class="corporate-announcement">
+                    <div class="announcement-header">
+                        <h2 class="announcement-title">🎮 CORPORATE ACQUISITION COMPLETE 🎮</h2>
+                        <div class="confetti"></div>
+                    </div>
+                    
+                    <div class="game-transformation">
+                        <div class="before-after">
+                            <div class="game-card original">
+                                <h3 id="originalGame">Original Game</h3>
+                                <p class="game-description">Pure gaming experience</p>
+                            </div>
+                            <div class="transformation-arrow">➤</div>
+                            <div class="game-card ea-version">
+                                <h3 id="eaGame">EA Version</h3>
+                                <p class="game-description">Optimized for shareholder value</p>
+                            </div>
                         </div>
-                    ))}
-                    <button onClick={addTab} className="cursor-pointer text-gray-500 hover:text-gray-700 px-3 pb-1.5 text-xl font-light" title="New Tab">+</button>
-                </div>
-
-                {/* Address Bar & Navigation */}
-                <div className="flex items-center p-2 bg-white border-b border-gray-200">
-                    <div className="flex space-x-2 mr-3 text-gray-500">
-                        <button onClick={goBack} disabled={!canGoBack} className="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50" title="Go Back">
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <button onClick={goForward} disabled={!canGoForward} className="p-1 rounded-full hover:bg-gray-100 disabled:opacity-50" title="Go Forward">
-                            <ArrowRight className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => navigate(activeTab.url)} className="p-1 rounded-full hover:bg-gray-100" title="Reload Page">
-                            <RefreshCw className="w-5 h-5" />
-                        </button>
                     </div>
 
-                    {/* Omnibox (Address Bar) */}
-                    <div className="flex-grow flex items-center bg-gray-100 rounded-full py-1 px-4 shadow-inner border border-gray-200">
-                        <Search className="w-4 h-4 text-gray-500 mr-2" />
-                        <input
-                            ref={omniboxRef}
-                            type="text"
-                            placeholder="Type a URL or search query and hit ENTER!"
-                            className="w-full bg-transparent focus:outline-none text-gray-800 text-sm"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    navigate(e.currentTarget.value);
-                                    e.currentTarget.blur();
-                                }
-                            }}
-                        />
+                    <div class="ai-description-section">
+                        <div class="ai-description-card">
+                            <h4>🤖 AI-Generated Corporate Vision</h4>
+                            <p id="aiDescription">Loading corporate transformation...</p>
+                        </div>
                     </div>
 
-                    <button onClick={addBookmark} className="ml-3 p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-yellow-500" title="Bookmark This Page">
-                        <Bookmark className="w-5 h-5 fill-current" />
-                    </button>
+                    <div class="features-grid">
+                        <div class="feature-card" data-aos="fade-up">
+                            <div class="feature-icon">💰</div>
+                            <h4>Ultimate Team Mode</h4>
+                            <p id="ultimateTeamDesc">Collect player cards with loot boxes!</p>
+                        </div>
+                        <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                            <div class="feature-icon">🏆</div>
+                            <h4>Season Pass</h4>
+                            <p id="seasonPassDesc">Unlock content you already paid for!</p>
+                        </div>
+                        <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                            <div class="feature-icon">⚡</div>
+                            <h4>Energy System</h4>
+                            <p id="energyDesc">Wait 24 hours or pay $4.99 to continue!</p>
+                        </div>
+                        <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                            <div class="feature-icon">🎯</div>
+                            <h4>Pay-to-Win</h4>
+                            <p id="payToWinDesc">Victory has never been more affordable!</p>
+                        </div>
+                    </div>
+
+                    <div class="pricing-section">
+                        <h3>Choose Your Experience:</h3>
+                        <div class="pricing-options">
+                            <div class="price-tier">
+                                <h4>Base Game</h4>
+                                <p class="price">$59.99</p>
+                                <p class="price-desc">Barely functional</p>
+                            </div>
+                            <div class="price-tier recommended">
+                                <h4>Deluxe Edition</h4>
+                                <p class="price">$89.99</p>
+                                <p class="price-desc">Includes day-one DLC</p>
+                            </div>
+                            <div class="price-tier">
+                                <h4>Ultimate Edition</h4>
+                                <p class="price">$119.99</p>
+                                <p class="price-desc">The full game experience</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="resetBtn" class="reset-btn">ACQUIRE ANOTHER GAME</button>
                 </div>
+            </div>
+        </main>
 
-                {/* Bookmarks Bar */}
-                <div className={`flex items-center space-x-4 p-1.5 bg-white border-b border-gray-200 overflow-x-auto whitespace-nowrap ${bookmarks.length > 0 ? 'sm:flex' : 'hidden'}`}>
-                    {bookmarks.map((b, index) => (
-                        <button
-                            key={index}
-                            className="flex items-center text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded-md transition duration-100"
-                            title={b.url}
-                            onClick={() => navigate(b.url)}
-                            // Right-click to delete bookmark
-                            onContextMenu={(e) => { e.preventDefault(); deleteBookmark(index, b.name); }}
-                        >
-                            <Bookmark className="w-4 h-4 mr-1 text-yellow-500 fill-current" />
-                            <span className="truncate max-w-[150px]">{b.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </header>
+        <footer class="footer">
+            <p>*This is a parody. No actual games were harmed in the making of this experience.</p>
+        </footer>
+    </div>
 
-            {/* Main Content Area */}
-            <main className="flex-grow">
-                {renderContent()}
-            </main>
-        </div>
-    );
-};
-
-export default App;
+    <script src="script.js"></script>
+</body>
+</html>
