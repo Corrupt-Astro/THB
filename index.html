@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browser Simulator</title>
+    <title>Origin Browser</title>
     <!-- Load Tailwind CSS from CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Lucide icons from CDN -->
@@ -112,47 +112,47 @@
         const MOCK_NEW_TAB = 'about:blank';
         const MOCK_SEARCH_ENGINE_PREFIX = 'https://search.com/q='; 
         const ECHO_LIST = 'echo://list'; 
-        const MOCK_GAMES_LIST = 'mock://games';
 
         // Comprehensive map of all mock sites for direct navigation
         const MOCK_SITES = {
             // --- Standard Mocks ---
             [MOCK_NEW_TAB]: { title: 'New Tab', type: 'standard', icon: 'home' },
-            [ECHO_LIST]: { title: 'Special Commands List', type: 'standard', icon: 'list' },
-            [MOCK_GAMES_LIST]: { title: 'Arcade Classics', type: 'standard', icon: 'gamepad' }, // Game List Page
+            [ECHO_LIST.substring('echo://'.length)]: { title: 'Special Commands List', type: 'standard', icon: 'list' }, // Explicitly define 'list' key
             'news.fakenews.com': { title: 'The Daily Silly', type: 'standard', icon: 'newspaper' },
-            'youareaidiot.com': { title: '!!! WINNER !!!', type: 'standard', icon: 'alert-triangle' }, // Crash site
+            'youareaidiot.com': { title: '!!! CRASH !!!', type: 'standard', icon: 'alert-triangle' }, // Crash site
 
-            // --- Iframe/External Sites (Updated) ---
-            'netframe.com': { 
-                title: 'NetFrame - Browser Demo', 
-                type: 'standard', 
-                icon: 'layout-template', 
-                description: 'A simulated browser-within-a-browser (loads external iframe: https://corrupt-astro.github.io/NetFrame/).',
-                externalUrl: 'https://corrupt-astro.github.io/NetFrame/' 
-            },
+            // --- User-Requested Mocks (External iFrames) ---
             'TFFB.com': { 
-                title: 'TFFB - Browser Demo', 
+                title: 'The Fancy Failure Bistro', 
                 type: 'standard', 
-                icon: 'layout-template', 
-                description: 'Loads TFFB.com (external iframe: https://corrupt-astro.github.io/TFFB/).',
-                externalUrl: 'https://corrupt-astro.github.io/TFFB/' 
+                icon: 'sandwich', 
+                description: 'Loads the GitHub hosted TFFB site in an iframe.',
+                externalUrl: 'https://Corrupt-Astro.github.io/TFFB' // External URL
             },
+            'netframe.com': { 
+                title: 'Netframe Streaming', 
+                type: 'standard', 
+                icon: 'tv', 
+                description: 'Loads the GitHub hosted Netframe site in an iframe.',
+                externalUrl: 'https://Corrupt-Astro.github.io/Netframe' // External URL
+            },
+
+            // --- Iframe/External Sites (Simplified) ---
             'google.com': { 
                 title: 'Google Search', 
                 type: 'standard', 
                 icon: 'search', 
-                description: 'Loads the actual Google search page in an iframe.',
-                externalUrl: 'https://www.google.com/' 
+                description: 'Loads the actual Google search page in an iframe using the ?igu=1 parameter.',
+                externalUrl: 'https://www.google.com?igu=1'
             },
             
-            // --- Phishing Scenarios ---
-            'free v-bux': { title: 'Search: free v-bux', type: 'phishing', icon: 'zap', isSearchTrigger: true }, // Search Trigger
+            // --- Phishing Scenarios (Search Triggers and Landing Pages handled locally) ---
+            'free v-bux': { title: 'Search: free v-bux', type: 'phishing', icon: 'zap', isSearchTrigger: true }, 
             'vbucks-claim-99999': { title: 'V-Bux Claim: FINAL STEP!', type: 'phishing', icon: 'zap', displayUrl: 'totallynotphishing.net' },
             'humanverify-net': { title: 'Human Verification', type: 'phishing', icon: 'user-check', displayUrl: 'humanverify.net' },
-            'urgent-pet-photos': { title: 'URGENT Security Check', type: 'phishing', icon: 'users', isSearchTrigger: true }, // Search Trigger
+            'urgent-pet-photos': { title: 'URGENT Security Check', type: 'phishing', icon: 'users', isSearchTrigger: true }, 
             'pet-photo-access-verify': { title: 'Friendship Security Check', type: 'phishing', icon: 'users', displayUrl: 'missingdog.co/verify' },
-            'free-pizza-for-life': { title: 'Prince Mozzarella XIII', type: 'phishing', icon: 'pizza', isSearchTrigger: true }, // Search Trigger
+            'free-pizza-for-life': { title: 'Prince Mozzarella XIII', type: 'phishing', icon: 'pizza', isSearchTrigger: true }, 
             'princeofpizza.org': { title: 'LIFETIME PIZZA SUPPLY', type: 'phishing', icon: 'pizza' },
 
             // --- Phishing Scenarios (New 10) ---
@@ -292,7 +292,7 @@
         dialogCancelBtn.onclick = () => {
              dialogEl.classList.add('hidden');
              dialogEl.classList.remove('flex');
-             // Resolve with false/null to indicate cancelation
+             // Resolve with null to indicate cancelation
              dialogState.resolve(null);
              dialogState.resolve = null;
         };
@@ -306,55 +306,76 @@
             if (!tab) return;
 
             let newUrl = url.trim();
-            const normalizedInput = newUrl.toLowerCase();
+            let normalizedInput = newUrl.toLowerCase();
             let newTitle;
-            let mockKey = null;
-
+            let mockKey = null; // Store the key that triggered the navigation for content rendering
+            
+            // Normalize inputs: remove echo:// prefix for internal lookup
+            if (normalizedInput.startsWith('echo://')) {
+                 normalizedInput = normalizedInput.substring('echo://'.length);
+            }
+            
             // 1. Determine URL, Search, or MOCK SITE
+
+            // Check if the bare key exists in MOCK_SITES (e.g., 'tffb.com' or 'list')
+            if (MOCK_SITES[normalizedInput]) {
+                mockKey = normalizedInput;
+            }
             
-            // A. Check for exact match on MOCK_SITES keys or search triggers
-            for (const key in MOCK_SITES) {
-                const site = MOCK_SITES[key];
-                if (normalizedInput === key.toLowerCase()) {
-                    mockKey = key;
-                    break;
-                }
-                // Check for search triggers (like "free v-bux")
-                if (site.isSearchTrigger && normalizedInput.includes(key.toLowerCase())) {
-                    mockKey = site.isSearchTrigger === true ? key : site.isSearchTrigger;
-                    break;
+            // B. Check for exact match on MOCK_SITES keys or search triggers
+            if (!mockKey) {
+                for (const key in MOCK_SITES) {
+                    const site = MOCK_SITES[key];
+                    if (normalizedInput === key.toLowerCase()) {
+                        mockKey = key;
+                        break;
+                    }
+                    // Check for search triggers (like "free v-bux")
+                    if (site.isSearchTrigger && normalizedInput.includes(key.toLowerCase())) {
+                        mockKey = key; // Use the trigger key as the mockKey
+                        break;
+                    }
                 }
             }
             
-            // B. Check for special search keyword override: "game" / "games"
-            const gameKeywords = ['game', 'games'];
-            const looksLikeSearch = !newUrl.startsWith('http') && !newUrl.includes('.');
-
-            if (!mockKey && looksLikeSearch && gameKeywords.some(keyword => normalizedInput.includes(keyword))) {
-                 mockKey = MOCK_GAMES_LIST;
-            }
-
-            // C. Check for Google entry
+            // C. Check for Google entry (using the defined key)
             if (!mockKey && (normalizedInput === 'google' || normalizedInput === 'google.com')) {
                 mockKey = 'google.com';
             }
 
+
             if (mockKey) {
                 // Navigate to a mock site based on the key
-                const mockSite = MOCK_SITES[mockKey];
-                // Use the external URL if defined, otherwise use the internal mock key
-                newUrl = mockSite.externalUrl || mockKey; 
-                newTitle = mockSite.title;
-            } else if (newUrl === MOCK_NEW_TAB || newUrl === '') {
+                // Use a safety fallback ({}) in case a determined mockKey somehow doesn't map to a site object
+                const mockSite = MOCK_SITES[mockKey] || {}; 
+                
+                // If it's an external URL, use the external URL as the new URL.
+                if (mockSite.externalUrl) {
+                    newUrl = mockSite.externalUrl;
+                } else if (mockSite.isSearchTrigger) {
+                    // If it's a search trigger (like 'free v-bux'), the URL must be the search URL
+                    newUrl = `${MOCK_SEARCH_ENGINE_PREFIX}${encodeURIComponent(mockKey)}`;
+                } else if (mockKey === ECHO_LIST.substring('echo://'.length)) {
+                    newUrl = ECHO_LIST;
+                } else if (mockKey === MOCK_NEW_TAB) {
+                    newUrl = MOCK_NEW_TAB;
+                } else {
+                    // For local mock pages, the URL is set to the key for simplified display and routing.
+                    newUrl = mockKey;
+                }
+                
+                newTitle = mockSite.title || mockKey; // Use title if available, otherwise the key
+
+            } else if (normalizedInput === MOCK_NEW_TAB || normalizedInput === '') {
                 newUrl = MOCK_NEW_TAB;
                 newTitle = 'New Tab';
             } else if (!newUrl.startsWith('http')) {
-                // Not a mock URL, not a search trigger, not a standard internal page. Treat as search or bare URL.
+                // Not a mock URL.
                 if (newUrl.includes('.') && !newUrl.includes(' ')) {
-                    // Looks like a domain (e.g., google.com), assume external URL
+                    // Looks like a domain (e.g., cnn.com), treat as external URL
                     newUrl = `https://${newUrl}`;
                 } else {
-                    // Treat as search query
+                    // Treat as generic search query
                     newUrl = `${MOCK_SEARCH_ENGINE_PREFIX}${encodeURIComponent(newUrl)}`;
                 }
             }
@@ -400,7 +421,8 @@
                     title: newTitle, 
                     history: newHistory, 
                     historyIndex: newIndex,
-                    isCrashed: resetCrash ? false : t.isCrashed
+                    isCrashed: resetCrash ? false : t.isCrashed,
+                    mockKey: mockKey // Store the mock key for consistent content rendering
                 };
             });
             
@@ -413,8 +435,9 @@
 
             const newIndex = tab.historyIndex - 1;
             const prevUrl = tab.history[newIndex];
-
-            updateTab(tab.id, { historyIndex: newIndex });
+            
+            // Clear mockKey for history navigation to ensure renderContent recalculates it
+            updateTab(tab.id, { historyIndex: newIndex, mockKey: null }); 
             navigate(prevUrl, true);
         };
 
@@ -425,7 +448,8 @@
             const newIndex = tab.historyIndex + 1;
             const nextUrl = tab.history[newIndex];
             
-            updateTab(tab.id, { historyIndex: newIndex });
+            // Clear mockKey for history navigation to ensure renderContent recalculates it
+            updateTab(tab.id, { historyIndex: newIndex, mockKey: null });
             navigate(nextUrl, true);
         };
         
@@ -434,7 +458,7 @@
         const handleCompleteVerification = () => {
             const tab = getActiveTab();
             if (tab) {
-                updateTab(tab.id, { isVerified: true });
+                updateTab(tab.id, { isVerified: true, mockKey: 'vbucks-claim-99999', url: 'vbucks-claim-99999' }); // Re-route back to the claim page
                 showAlert("Verification Successful!", "Human verification complete! Return to the V-Bux claim page and click the button again to receive your reward.", 'Got It');
                 updateUI();
             }
@@ -462,6 +486,7 @@
                 historyIndex: 0,
                 isVerified: false,
                 isCrashed: false, 
+                mockKey: MOCK_NEW_TAB
             };
             tabs.push(newTab);
             activeTabId = newTab.id;
@@ -479,6 +504,7 @@
                     historyIndex: 0, 
                     isVerified: false,
                     isCrashed: false, 
+                    mockKey: MOCK_NEW_TAB
                 });
                 updateUI();
                 return;
@@ -514,13 +540,13 @@
         const addBookmark = async () => {
             const tab = getActiveTab();
             
-            // Check if the current URL is a mock site that disallows bookmarking
-            const mockKey = Object.keys(MOCK_SITES).find(key => 
-                key === tab.url || MOCK_SITES[key].externalUrl === tab.url
-            );
-            const mockSite = mockKey ? MOCK_SITES[mockKey] : {};
+            // Determine the key/url to check
+            const checkUrl = tab.mockKey ? tab.mockKey : tab.url;
 
-            if (tab.url === MOCK_NEW_TAB || mockSite.type === 'phishing') {
+            // Check if the current URL is a mock site that disallows bookmarking
+            const mockSite = MOCK_SITES[checkUrl] || {};
+
+            if (checkUrl === MOCK_NEW_TAB || mockSite.type === 'phishing' || checkUrl.startsWith('echo://') || tab.url.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
                 await showAlert("Cannot Bookmark", "Bookmarks cannot be saved for internal pages, search results, or simulated scam sites.", 'OK');
                 return;
             }
@@ -528,7 +554,7 @@
             const defaultName = tab.title.replace('...', '');
             const name = await showAlert({
                 title: "Add Bookmark",
-                message: `Enter a name for the bookmark for: ${mockKey || getDomainFromUrl(tab.url)}`,
+                message: `Enter a name for the bookmark for: ${getDomainFromUrl(tab.url)}`,
                 inputPlaceholder: defaultName,
                 confirmText: 'Add'
             });
@@ -555,7 +581,7 @@
         const getNewTabPageHtml = () => `
             <div class="mock-page-content p-8 bg-gray-50 h-full justify-center">
                 <div class="text-center">
-                    <h1 class="text-5xl font-extrabold text-indigo-700 mb-4">Gemini Browser Simulator</h1>
+                    <h1 class="text-5xl font-extrabold text-indigo-700 mb-4">Origin Browser</h1>
                     <p class="text-xl text-gray-600 mb-8">Type a URL or command into the address bar to begin your journey!</p>
                     <button onclick="navigate('${ECHO_LIST}')" class="px-6 py-3 bg-indigo-600 text-white rounded-lg text-lg font-semibold hover:bg-indigo-700 transition duration-150 shadow-lg flex items-center mx-auto">
                          <i data-lucide="list" class="w-5 h-5 mr-2"></i> See Special Commands & Scenarios
@@ -564,28 +590,67 @@
                 </div>
             </div>
         `;
+        
+        const getGenericSearchPageHtml = (url) => {
+            const query = url.startsWith(MOCK_SEARCH_ENGINE_PREFIX) 
+                ? decodeURIComponent(url.substring(MOCK_SEARCH_ENGINE_PREFIX.length))
+                : url;
+            
+            const results = [
+                { title: `Wikipedia: ${query}`, domain: 'https://en.wikipedia.org/', snippet: `The authoritative, non-scam source for information about ${query}.` },
+                { title: `Bing: ${query}`, domain: 'https://www.bing.com/', snippet: 'Another search engine result. Safe to ignore.' },
+                { title: `Random Blog Post about ${query}`, domain: 'https://genericblog.com/post/123', snippet: 'A slightly less authoritative, but also safe, blog post.' },
+            ];
 
+            const resultHtml = results.map(r => `
+                <div class="p-4 bg-white rounded-lg shadow-md border-l-4 border-gray-300">
+                    <p class="text-sm text-green-700">${r.domain}</p>
+                    <h3 class="text-xl font-medium text-indigo-700 hover:underline cursor-pointer" onclick="showAlert('External Link Blocked', 'To maintain a safe simulation, only internal mock pages and whitelisted external sites can be navigated.','OK')">${r.title}</h3>
+                    <p class="text-gray-600">${r.snippet}</p>
+                </div>
+            `).join('');
+
+            return `
+                <div class="mock-page-content p-8 bg-gray-100 h-full">
+                    <div class="max-w-4xl w-full mx-auto">
+                        <h1 class="text-2xl font-semibold mb-6">Generic Search Results for "${query}"</h1>
+                        <div class="space-y-4">${resultHtml}</div>
+                        <p class="text-center text-sm text-gray-500 mt-8">These results are safe and mock-only. Try searching for "free v-bux" or "urgent-pet-photos" for the scenarios.</p>
+                    </div>
+                </div>
+            `;
+        };
+        
         const getMockListPageHtml = () => {
-            const mockSitesArray = Object.keys(MOCK_SITES).map(url => ({ ...MOCK_SITES[url], url }));
+            // Get all mock sites excluding the standard internal pages
+            const mockSitesArray = Object.keys(MOCK_SITES)
+                .filter(key => 
+                    key !== MOCK_NEW_TAB && 
+                    key !== ECHO_LIST.substring('echo://'.length) 
+                ).map(url => ({ ...MOCK_SITES[url], url }));
 
-            const generalMocks = mockSitesArray.filter(m => m.type === 'standard' && m.url !== MOCK_NEW_TAB && m.url !== ECHO_LIST);
+            // google.com has an externalUrl property, so it will correctly land in internalMocks
+            const internalMocks = mockSitesArray.filter(m => m.externalUrl);
+            const localMocks = mockSitesArray.filter(m => !m.externalUrl && m.type === 'standard');
             const phishingScenarios = mockSitesArray.filter(m => m.type === 'phishing');
 
             const renderItems = (items) => items.map(item => {
-                let trigger = item.isSearchTrigger ? `Search for: "${item.url}"` : `URL: ${item.url}`;
-                let description = item.description || (item.url === 'youareaidiot.com' ? 'Triggers a simulated browser crash.' : '');
+                let trigger;
+                let urlToNavigate = item.url;
                 
-                // Special handling for Iframe/External URLs
                 if (item.externalUrl) {
-                     trigger = `URL/Search for: ${item.url} (Loads external iframe)`;
-                } else if (item.displayUrl) {
-                    trigger = `URL: ${item.displayUrl} (or internal: ${item.url})`;
-                } else if (item.url === MOCK_GAMES_LIST) {
-                    trigger = `Search for: "games" or "Game"`;
-                } else if (item.url === 'google.com') {
-                    trigger = `Search for: "google" or URL: "google.com"`;
+                    trigger = `URL/Search for: ${item.url} (Loads external iframe)`;
+                    urlToNavigate = item.url;
+                } else if (item.isSearchTrigger) {
+                    trigger = `Search for: "${item.url}"`;
+                    urlToNavigate = item.url; // Use the search term for navigation
+                } else {
+                    trigger = `URL/Search for: ${item.url} (Loads local HTML)`;
+                    urlToNavigate = item.url;
                 }
                 
+                const description = item.description || (item.url === 'youareaidiot.com' ? 'Triggers a simulated browser crash.' : 'A local HTML mock page.');
+
                 return `
                     <div class="border border-gray-200 p-4 rounded-xl hover:shadow-md transition bg-white">
                         <div class="flex items-start mb-2">
@@ -599,7 +664,7 @@
                             <span class="font-mono bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-xs">
                                 ${trigger}
                             </span>
-                            <button onclick="navigate('${item.url}')" class="px-4 py-1 bg-indigo-500 text-white text-sm rounded-full hover:bg-indigo-600 transition">
+                            <button onclick="navigate('${urlToNavigate}')" class="px-4 py-1 bg-indigo-500 text-white text-sm rounded-full hover:bg-indigo-600 transition">
                                 Try Now
                             </button>
                         </div>
@@ -607,55 +672,21 @@
                 `;
             }).join('');
 
+
             return `
                 <div class="p-8 bg-gray-50 min-h-full">
                     <div class="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-                        <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Browser Simulator Special Commands</h1>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-4">Origin Browser Special Commands</h1>
                         
-                        <h2 class="text-2xl font-semibold text-indigo-600 mb-4 mt-6">General Mocks & Utilities</h2>
-                        <div class="space-y-4">${renderItems(generalMocks)}</div>
+                        <h2 class="text-2xl font-semibold text-indigo-600 mb-4 mt-6">External Sites (Real Iframe Content)</h2>
+                        <p class="text-gray-600 mb-4">These sites load external content from the internet.</p>
+                        <div class="space-y-4">${renderItems(internalMocks)}</div>
 
-                        <h2 class="text-2xl font-semibold text-red-600 mb-4 mt-8">Phishing & Scams Scenarios (14 Total)</h2>
+                        <h2 class="text-2xl font-semibold text-indigo-600 mb-4 mt-8">Local Mock Pages</h2>
+                        <div class="space-y-4">${renderItems(localMocks)}</div>
+
+                        <h2 class="text-2xl font-semibold text-red-600 mb-4 mt-8">Phishing & Scams Scenarios (${phishingScenarios.length} Total)</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${renderItems(phishingScenarios)}</div>
-                    </div>
-                </div>
-            `;
-        };
-        
-        const getMockGameListPageHtml = () => {
-            const games = [
-                { name: 'Astro Blaster', description: 'Classic arcade shooter. Requires 25c deposit.', icon: 'rocket' },
-                { name: 'Dungeon Crawler 5', description: 'A never-ending text-based adventure!', icon: 'swords' },
-                { name: 'Cookie Clicker (v19.0)', description: 'The original time-waster. Click to earn cookies!', icon: 'cookie' },
-                { name: 'Fake Chess (Multiplayer)', description: 'Always draws. Play forever.', icon: 'chess' },
-                { name: 'Phishing Defender', description: 'An educational game about spotting scams.', icon: 'shield-check' },
-            ];
-
-            const gameList = games.map(game => `
-                <div class="flex items-center p-4 bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-200">
-                    <i data-lucide="${game.icon}" class="w-8 h-8 mr-4 text-red-500 flex-shrink-0"></i>
-                    <div class="flex-grow">
-                        <h3 class="text-lg font-bold text-gray-900">${game.name}</h3>
-                        <p class="text-sm text-gray-600">${game.description}</p>
-                    </div>
-                    <button onclick="showAlert('Game Unavailable', 'This is a mock page! Games cannot be run inside the simulator.','Got It')"
-                        class="ml-4 px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold hover:bg-green-600 transition shadow-md"
-                    >
-                        Play
-                    </button>
-                </div>
-            `).join('');
-
-            return `
-                <div class="mock-page-content p-8 bg-gray-100 h-full">
-                    <div class="max-w-4xl mx-auto w-full">
-                        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 border-b pb-3 flex items-center">
-                            <i data-lucide="gamepad" class="w-7 h-7 mr-3 text-red-600"></i> Arcade Classics - Game List
-                        </h1>
-                        <p class="text-gray-600 mb-8">Welcome to the NetFrame Gaming Arcade. All games are currently under maintenance (in this simulation!).</p>
-                        <div class="space-y-6">
-                            ${gameList}
-                        </div>
                     </div>
                 </div>
             `;
@@ -665,8 +696,7 @@
              showAlert('Phishing Attack Detected!', `You almost fell for the "${title}" scam. This is a common tactic where scammers use fear or greed to trick you. Never enter sensitive information on sites you accessed via an unexpected link.`, 'I Got It');
         };
 
-        const getMockPetScamPageHtml = () => {
-            const tab = getActiveTab();
+        const getMockPetScamPageHtml = (tab) => {
             const status = tab.isVerified ? 'verified' : 'pending';
 
             return `
@@ -730,8 +760,7 @@
             }
         };
 
-        const getMockPizzaPrincePageHtml = () => {
-            const tab = getActiveTab();
+        const getMockPizzaPrincePageHtml = (tab) => {
             const isPaid = tab.isVerified;
 
             return `
@@ -825,6 +854,15 @@
             `;
         };
 
+        const getNotFoundHtml = (url) => `
+            <div class="mock-page-content p-8 bg-gray-100 h-full justify-center text-center">
+                <i data-lucide="frown" class="w-16 h-16 mx-auto text-gray-500 mb-4"></i>
+                <h1 class="text-4xl font-bold mb-2">404 - Not Found</h1>
+                <p class="text-lg text-gray-600 mb-6">The page at <strong>${url}</strong> could not be found.</p>
+                <p class="text-sm text-gray-500 mb-8">Please check the address or navigate back to the <a href="#" onclick="navigate('${ECHO_LIST}')" class="text-indigo-600 hover:underline font-medium">Special Commands List</a>.</p>
+            </div>
+        `;
+
 
         // --- Content Renderer (Main Logic) ---
 
@@ -852,35 +890,65 @@
                 return;
             }
 
-            let htmlContent = '';
-            let setupListeners = null;
             const currentUrl = tab.url;
-            
-            // Check if the current URL matches an external URL mapping
+            // Determine the key used for rendering local content. Use the stored mockKey if available, otherwise fallback to the full URL string.
+            const renderKey = tab.mockKey || currentUrl;
+
+            // 1. Determine if this should be an external iframe
             let isExternalIframe = false;
-            for (const key in MOCK_SITES) {
-                if (MOCK_SITES[key].externalUrl === currentUrl) {
-                    isExternalIframe = true;
-                    break;
-                }
-            }
             
-            if (isExternalIframe || currentUrl.startsWith('https://')) {
-                 // Default rendering for external or unrecognized HTTPS URLs (using iframe)
-                contentArea.innerHTML = `<iframe src="${tab.url}" class="w-full h-full" title="${tab.title}"></iframe>`;
+            if (tab.mockKey) {
+                // If we navigated via a known key, check if that key maps to an external URL
+                const mockSite = MOCK_SITES[tab.mockKey];
+                if (mockSite && mockSite.externalUrl) { 
+                    isExternalIframe = true;
+                }
+            } else if (currentUrl.startsWith('https://') && !currentUrl.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
+                 // If it's a generic HTTPS site not produced by the internal search engine, treat as external.
+                 isExternalIframe = true;
+            }
+
+            if (isExternalIframe) {
+                 // Renders the iframe wrapper with optional block message
+                contentArea.innerHTML = `
+                    <div id="iframe-container" class="w-full h-full relative">
+                        <iframe src="${currentUrl}"
+                                id="browser-iframe"
+                                class="w-full h-full"
+                                title="${tab.title}"
+                                frameborder="0"
+                                marginheight="0"
+                                marginwidth="0"
+                                scrolling="auto"
+                                onerror="document.getElementById('iframe-block-message').classList.remove('hidden');">
+                        </iframe>
+                        <div id="iframe-block-message" class="absolute inset-0 bg-gray-900 bg-opacity-90 text-white flex flex-col items-center justify-center p-8 hidden">
+                            <i data-lucide="lock" class="w-12 h-12 text-yellow-400 mb-4"></i>
+                            <h2 class="text-xl font-bold mb-2">Iframe Blocked or Failed to Load</h2>
+                            <p class="text-center text-gray-300">
+                                The external site (**${getDomainFromUrl(currentUrl)}**) appears to be blocking its content from being loaded inside another website (using the **X-Frame-Options** header) or it may have failed to load securely.
+                            </p>
+                            <p class="mt-4 text-sm text-gray-400">
+                                The browser simulation continues to function!
+                            </p>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
                 return; // Exit early if using iframe
             }
-            // If not an iframe, proceed to mock page rendering
             
-            switch (currentUrl) {
+            // 2. Render Local Mock Content (based on renderKey)
+            let htmlContent = '';
+            let setupListeners = null;
+
+            switch (renderKey) {
                 case MOCK_NEW_TAB:
                     htmlContent = getNewTabPageHtml();
                     break;
                 case ECHO_LIST: 
+                case 'list':
                     htmlContent = getMockListPageHtml();
-                    break;
-                case MOCK_GAMES_LIST:
-                    htmlContent = getMockGameListPageHtml();
                     break;
                 case 'news.fakenews.com':
                     // Reusing the news site content logic for brevity
@@ -912,21 +980,7 @@
                         </div>
                     `;
                     break;
-                case 'youareaidiot.com':
-                    // This is handled by the crash logic above
-                    crashTab(tab.id);
-                    return; 
-                case 'urgent-pet-photos': // Search trigger that leads to the page
-                case 'pet-photo-access-verify':
-                    htmlContent = getMockPetScamPageHtml();
-                    setupListeners = setupPetScamListeners;
-                    break;
-                case 'free-pizza-for-life': // Search trigger that leads to the page
-                case 'princeofpizza.org':
-                    htmlContent = getMockPizzaPrincePageHtml();
-                    setupListeners = setupPizzaPrinceListeners;
-                    break;
-                case 'free v-bux': // Search trigger that leads to the search results page
+                case 'free v-bux': // Search trigger key: Renders the search results page
                     htmlContent = `
                         <div class="mock-page-content p-8 bg-gray-100 h-full">
                             <div class="max-w-4xl w-full mx-auto">
@@ -952,7 +1006,7 @@
                         </div>
                     `;
                     break;
-                case 'vbucks-claim-99999':
+                case 'vbucks-claim-99999': // Landing page for V-Bux scam
                     htmlContent = `
                         <div class="mock-page-content p-8 bg-red-50 h-full">
                             <div class="max-w-md w-full bg-white border-t-8 border-red-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
@@ -981,7 +1035,7 @@
                         </div>
                     `;
                     break;
-                case 'humanverify-net':
+                case 'humanverify-net': // Human Verification page
                     htmlContent = `
                         <div class="mock-page-content p-8 bg-blue-50 h-full">
                             <div class="max-w-md w-full bg-white border-t-8 border-blue-600 rounded-xl shadow-2xl p-8 mt-10 text-center">
@@ -1000,6 +1054,16 @@
                         </div>
                     `;
                     break;
+                case 'urgent-pet-photos': // Search trigger key: Renders the landing page content
+                case 'pet-photo-access-verify':
+                    htmlContent = getMockPetScamPageHtml(tab);
+                    setupListeners = setupPetScamListeners;
+                    break;
+                case 'free-pizza-for-life': // Search trigger key: Renders the landing page content
+                case 'princeofpizza.org':
+                    htmlContent = getMockPizzaPrincePageHtml(tab);
+                    setupListeners = setupPizzaPrinceListeners;
+                    break;
                 // --- New 10 Scenarios (Use Generic Template) ---
                 case 'urgent-bank-security.com':
                 case 'netflix-password-update.cc':
@@ -1011,7 +1075,16 @@
                 case 'lost-wallet-reward.net':
                 case 'dear-grandma-im-in-jail.us':
                 case 'best-antivirus-download.co':
-                    htmlContent = getGenericScamHtml(currentUrl);
+                    htmlContent = getGenericScamHtml(renderKey);
+                    break;
+                default:
+                    // This handles generic searches like 'weather' or 'cat pictures'
+                    if (currentUrl.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
+                         htmlContent = getGenericSearchPageHtml(currentUrl);
+                    } else {
+                        // All mock content should be caught above. Default to 404.
+                         htmlContent = getNotFoundHtml(currentUrl);
+                    }
                     break;
             }
 
@@ -1044,34 +1117,23 @@
             // 2. Update Omnibox (Display the URL)
             let displayUrl = tab.url;
             
-            // Check if the current URL (which might be the long external one) maps back to a short mock key
-            let mockKeyToDisplay = null;
-            for (const key in MOCK_SITES) {
-                const site = MOCK_SITES[key];
-                if (site.externalUrl === tab.url) {
-                    // Found a match for the full external URL (e.g., https://corrupt-astro.github.io/NetFrame/)
-                    mockKeyToDisplay = key; // Set to the friendly key (e.g., 'netframe.com')
-                    break;
-                } else if (key === tab.url) {
-                    // Found a match for an internal key (like 'echo://list')
-                    mockKeyToDisplay = key;
-                    break;
-                }
-            }
-            
-            if (mockKeyToDisplay) {
-                const mockSite = MOCK_SITES[mockKeyToDisplay];
+            // Check if the current URL maps back to a mock key for display purposes
+            if (tab.mockKey) {
+                const mockSite = MOCK_SITES[tab.mockKey] || {};
                 
                 if (mockSite.externalUrl) {
-                    // For external sites, display the friendly key (e.g., 'netframe.com')
-                    displayUrl = mockKeyToDisplay;
+                    // For external sites (including TFFB/Netframe), display the friendly key with the echo:// prefix
+                    displayUrl = `echo://${tab.mockKey}`;
                 } else if (mockSite.displayUrl) {
                     // For phishing/search triggers with a custom display domain
                     displayUrl = mockSite.displayUrl;
-                } else if (mockKeyToDisplay === MOCK_NEW_TAB) {
+                } else if (tab.mockKey === MOCK_NEW_TAB) {
                     displayUrl = ''; // New Tab is empty
-                } else {
-                    displayUrl = mockKeyToDisplay;
+                } else if (tab.mockKey === ECHO_LIST.substring('echo://'.length)) {
+                     displayUrl = ECHO_LIST;
+                } else if (tab.mockKey === tab.url && !tab.url.startsWith('http')) {
+                    // For local mock pages whose URL is the key (e.g., news.fakenews.com)
+                    displayUrl = tab.mockKey;
                 }
             } else if (tab.url.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
                 // If it's a search URL, display the search terms
@@ -1086,15 +1148,23 @@
             
             // 3. Render Tabs
             tabBar.innerHTML = tabs.map(t => {
-                const site = MOCK_SITES[t.url] || Object.values(MOCK_SITES).find(s => s.externalUrl === t.url) || {};
+                // Determine the mock key to use for icons/colors
+                const key = t.mockKey || t.url;
+                const site = MOCK_SITES[key] || Object.values(MOCK_SITES).find(s => s.externalUrl === t.url) || {};
                 const icon = t.isCrashed ? 'alert-triangle' : site.icon || 'globe';
                 let iconColor = t.isCrashed ? 'text-red-600' : 'text-blue-600';
                 
                 // Specific icon colors for certain pages
-                if (t.url === 'news.fakenews.com') {
+                if (key === 'news.fakenews.com') {
                     iconColor = 'text-green-600';
-                } else if (t.url.includes('google.com')) {
-                    iconColor = 'text-gray-900'; // Make Google icon look distinct
+                } else if (key === 'TFFB.com') {
+                    iconColor = 'text-yellow-600';
+                } else if (key === 'netframe.com') {
+                    iconColor = 'text-red-600';
+                } else if (key === 'google.com') {
+                    iconColor = 'text-indigo-600';
+                } else if (t.url.startsWith(MOCK_SEARCH_ENGINE_PREFIX)) {
+                    iconColor = 'text-gray-500';
                 }
 
                 return `
@@ -1151,6 +1221,7 @@
                     historyIndex: 0,
                     isVerified: false, 
                     isCrashed: false, 
+                    mockKey: MOCK_NEW_TAB
                 };
                 tabs.push(initialTab);
                 activeTabId = initialTab.id;
@@ -1167,7 +1238,10 @@
             });
             backBtn.onclick = goBack;
             forwardBtn.onclick = goForward;
-            reloadBtn.onclick = () => navigate(getActiveTab().url);
+            // Reload now just navigates to the current URL, re-rendering the mock page if necessary
+            reloadBtn.onclick = () => {
+                 navigate(getActiveTab().url);
+            };
             bookmarkAddBtn.onclick = addBookmark;
             
             // Initial UI rendering
